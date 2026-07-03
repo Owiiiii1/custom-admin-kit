@@ -122,6 +122,46 @@ Without `--backup` / `--force`:
 HandleInertiaRequests changes require --backup or --force.
 ```
 
+### Core admin routes missing or non-standard web.php
+
+Install requires Inertia on the host:
+
+```bash
+composer require inertiajs/inertia-laravel
+```
+
+Then create/link routes:
+
+```bash
+php artisan owl-admin:frontend-setup --preset=core --dry-run
+php artisan owl-admin:frontend-setup --preset=core --backup
+```
+
+This creates `routes/owl-admin-pages.php` and may add to `routes/web.php`:
+
+```php
+require __DIR__.'/owl-admin-pages.php';
+```
+
+If `routes/web.php` is non-standard, merge manually using `docs/merge-snippets/web.php`.
+
+Example dry-run output:
+
+```text
+routes:
+  owl-admin-pages.php: missing
+  web.php include: no
+  inertia dependency: no
+  action: blocked
+  install hint: composer require inertiajs/inertia-laravel
+```
+
+Without `--backup` / `--force`:
+
+```text
+Route setup changes require --backup or --force.
+```
+
 Fix manually:
 
 ```bash

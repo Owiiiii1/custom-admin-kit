@@ -23,6 +23,10 @@ class FrontendSetupCommandTest extends PackageTestCase
             ->expectsOutputToContain('vite.config.js:')
             ->expectsOutputToContain('app.jsx:')
             ->expectsOutputToContain('HandleInertiaRequests:')
+            ->expectsOutputToContain('routes:')
+            ->expectsOutputToContain('owl-admin-pages.php:')
+            ->expectsOutputToContain('web.php include:')
+            ->expectsOutputToContain('inertia dependency:')
             ->expectsOutputToContain('owlAdmin share:')
             ->expectsOutputToContain('missing inputs:')
             ->expectsOutputToContain('action:')
@@ -160,6 +164,7 @@ JS;
             app(\OwlSolutions\CustomAdminKit\Support\ViteConfigMerger::class),
             app(\OwlSolutions\CustomAdminKit\Support\InertiaAppMerger::class),
             app(\OwlSolutions\CustomAdminKit\Support\InertiaMiddlewareMerger::class),
+            app(\OwlSolutions\CustomAdminKit\Support\WebRoutesMerger::class),
         );
 
         $result = $planner->plan($basePath, 'core');
@@ -172,7 +177,19 @@ JS;
     private function seedHostFrontendFiles(): void
     {
         $this->seedHostFiles($this->hostFixtureFiles());
+        $this->seedInertiaVendor();
         file_put_contents(base_path('resources/css/owl-admin.css'), '/* kit */');
+    }
+
+    private function seedInertiaVendor(): void
+    {
+        $dir = base_path('vendor/inertiajs/inertia-laravel');
+
+        if (! is_dir($dir)) {
+            mkdir($dir, 0777, true);
+        }
+
+        file_put_contents($dir.'/.gitkeep', '');
     }
 
     /**
@@ -262,6 +279,15 @@ export default defineConfig({
 JS,
             'resources/js/app.jsx' => "import '../css/app.css';\n",
             'resources/css/app.css' => "body {}\n",
+            'routes/web.php' => <<<'PHP'
+<?php
+
+use Illuminate\Support\Facades\Route;
+
+Route::get('/', function () {
+    return view('welcome');
+});
+PHP,
             'app/Http/Middleware/HandleInertiaRequests.php' => <<<'PHP'
 <?php
 namespace App\Http\Middleware;

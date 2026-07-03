@@ -14,6 +14,7 @@ class FrontendSetupPlanner
         private readonly ViteConfigMerger $viteConfigMerger,
         private readonly InertiaAppMerger $inertiaAppMerger,
         private readonly InertiaMiddlewareMerger $inertiaMiddlewareMerger,
+        private readonly WebRoutesMerger $webRoutesMerger,
     ) {}
 
     public function plan(string $basePath, string $preset): FrontendSetupResult
@@ -41,12 +42,16 @@ class FrontendSetupPlanner
         $inertiaMiddlewareSteps = $this->inertiaMiddlewareMerger->plan($basePath);
         $inertiaMiddlewareAnalysis = $inertiaMiddlewareSteps[0]['analysis'] ?? null;
 
+        $webRoutesSteps = $this->webRoutesMerger->plan($basePath);
+        $webRoutesAnalysis = $this->extractWebRoutesAnalysis($webRoutesSteps);
+
         $planSteps = array_merge(
             $packageJsonSteps,
             $viteConfigSteps,
             $inertiaAppSteps,
             $this->planAppCss($basePath),
             $inertiaMiddlewareSteps,
+            $webRoutesSteps,
         );
 
         $missingNpm = $packageJsonMerge instanceof PackageJsonMergePlan
@@ -75,6 +80,7 @@ class FrontendSetupPlanner
             viteConfigAnalysis: $viteConfigAnalysis instanceof ViteConfigAnalysis ? $viteConfigAnalysis : null,
             inertiaAppAnalysis: $inertiaAppAnalysis instanceof InertiaAppAnalysis ? $inertiaAppAnalysis : null,
             inertiaMiddlewareAnalysis: $inertiaMiddlewareAnalysis instanceof InertiaMiddlewareAnalysis ? $inertiaMiddlewareAnalysis : null,
+            webRoutesAnalysis: $webRoutesAnalysis,
         );
     }
 
@@ -187,6 +193,33 @@ class FrontendSetupPlanner
             $results[] = $dependencyResult;
         }
 
+        $webRoutesAnalysis = $this->webRoutesMerger->analyze($basePath);
+
+        if (! $webRoutesAnalysis->hasInertiaDependency) {
+            $results[] = CheckResult::warn(
+                'routes-inertia',
+                'inertiajs/inertia-laravel is required for core admin page routes.',
+                $webRoutesAnalysis->inertiaInstallHint ?? 'composer require inertiajs/inertia-laravel',
+            );
+        } elseif ($webRoutesAnalysis->action === WebRoutesAnalysis::ACTION_OK) {
+            $results[] = CheckResult::pass(
+                'routes-pages',
+                'Core admin routes file and web.php include are configured.',
+            );
+        } elseif ($webRoutesAnalysis->requiresManualMerge()) {
+            $results[] = CheckResult::warn(
+                'routes-web',
+                'Non-standard routes/web.php detected for owl-admin include.',
+                'Merge manually using docs/merge-snippets/web.php',
+            );
+        } elseif ($webRoutesAnalysis->hasChanges()) {
+            $results[] = CheckResult::warn(
+                'routes-pages',
+                'Core admin routes can be created/linked via frontend setup.',
+                'Run owl-admin:frontend-setup with --backup or --force.',
+            );
+        }
+
         if (! $this->frontendDependencies->requiresFrontend($preset)) {
             $results[] = CheckResult::warn('frontend-preset', 'Preset does not declare frontend stubs.');
         } else {
@@ -227,5 +260,19 @@ class FrontendSetupPlanner
             'action' => 'merge',
             'detail' => 'Import ./owl-admin.css from published kit styles.',
         ]];
+    }
+
+    /**
+     * @param  list<array{file: string, action: string, detail: string, analysis?: WebRoutesAnalysis}>  $steps
+     */
+    private function extractWebRoutesAnalysis(array $steps): ?WebRoutesAnalysis
+    {
+        foreach ($steps as $step) {
+            if (($step['analysis'] ?? null) instanceof WebRoutesAnalysis) {
+                return $step['analysis'];
+            }
+        }
+
+        return null;
     }
 }

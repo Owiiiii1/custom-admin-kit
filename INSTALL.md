@@ -137,7 +137,7 @@ Not published by core preset:
 | `resources/js/app.jsx` | Register Inertia pages |
 | `vite.config.js` | Safe input merge via `owl-admin:frontend-setup` (standard Laravel config only) |
 | `package.json` | Safe merge via `owl-admin:frontend-setup` (adds missing deps only) |
-| `routes/web.php` | Dashboard and domain routes — use `docs/merge-snippets/core-routes.php` |
+| `routes/web.php` | Include `owl-admin-pages.php` via `owl-admin:frontend-setup` or `docs/merge-snippets/web.php` |
 | `app/Models/User.php` | Host user model |
 | `HandleInertiaRequests` | Share `owlAdmin` props via `owl-admin:frontend-setup` or `docs/merge-snippets/HandleInertiaRequests.php` |
 
@@ -315,4 +315,39 @@ If auto-merge would change the middleware:
 
 ```text
 HandleInertiaRequests changes require --backup or --force.
+```
+
+### Safe core admin routes (v0.2)
+
+Core JSX pages are published by install, but `routes/web.php` is never overwritten. Frontend setup can:
+
+1. Create `routes/owl-admin-pages.php` from the package stub
+2. Add `require __DIR__.'/owl-admin-pages.php';` to a **standard** host `routes/web.php` with `--backup` / `--force`
+
+Routes use `AdminRouteMiddleware::stack()` and register:
+
+| Route | Page | Name |
+|-------|------|------|
+| `GET /dashboard` | `Dashboard` | `dashboard` |
+| `GET /settings` | `Settings/Index` | `settings.index` |
+| `GET /app-settings` | `AppSettings/Index` | `app-settings.index` |
+| `GET /statistics/logs` | `Statistics/Logs` | `statistics.logs` |
+
+Requires `inertiajs/inertia-laravel` on the host app.
+
+Dry-run output:
+
+```text
+routes:
+  owl-admin-pages.php: missing
+  web.php include: no
+  inertia dependency: yes
+  action: auto-merge
+  will write: no (dry-run)
+```
+
+Non-standard `routes/web.php` → manual snippet: `docs/merge-snippets/web.php`
+
+```text
+Route setup changes require --backup or --force.
 ```

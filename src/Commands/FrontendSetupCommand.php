@@ -15,6 +15,8 @@ use OwlSolutions\CustomAdminKit\Support\PackageJsonMerger;
 use OwlSolutions\CustomAdminKit\Support\PublishMapResolver;
 use OwlSolutions\CustomAdminKit\Support\ViteConfigAnalysis;
 use OwlSolutions\CustomAdminKit\Support\ViteConfigMerger;
+use OwlSolutions\CustomAdminKit\Support\WebRoutesAnalysis;
+use OwlSolutions\CustomAdminKit\Support\WebRoutesMerger;
 
 class FrontendSetupCommand extends BaseKitCommand
 {
@@ -38,6 +40,7 @@ class FrontendSetupCommand extends BaseKitCommand
         ViteConfigMerger $viteConfigMerger,
         InertiaAppMerger $inertiaAppMerger,
         InertiaMiddlewareMerger $inertiaMiddlewareMerger,
+        WebRoutesMerger $webRoutesMerger,
     ): int {
         $this->printBanner('Frontend setup');
 
@@ -73,6 +76,7 @@ class FrontendSetupCommand extends BaseKitCommand
         $this->renderViteConfigMerge($result->viteConfigAnalysis, $dryRun, $backup, $force);
         $this->renderAppJsxMerge($result->inertiaAppAnalysis, $dryRun, $backup, $force);
         $this->renderHandleInertiaRequestsMerge($result->inertiaMiddlewareAnalysis, $dryRun, $backup, $force);
+        $this->renderWebRoutesMerge($result->webRoutesAnalysis, $dryRun, $backup, $force);
 
         if ($dryRun) {
             $this->info('Dry run complete — no files were modified.');
@@ -100,6 +104,12 @@ class FrontendSetupCommand extends BaseKitCommand
 
         if ($this->handleInertiaRequestsRequiresProtection($result) && ! $backup && ! $force) {
             $this->error('HandleInertiaRequests changes require --backup or --force.');
+
+            return self::FAILURE;
+        }
+
+        if ($this->webRoutesRequiresProtection($result) && ! $backup && ! $force) {
+            $this->error('Route setup changes require --backup or --force.');
 
             return self::FAILURE;
         }
@@ -181,6 +191,22 @@ class FrontendSetupCommand extends BaseKitCommand
             $this->line('  <fg=green>→</> HandleInertiaRequests updated.');
         }
 
+        if ($result->webRoutesAnalysis instanceof WebRoutesAnalysis && $result->webRoutesAnalysis->hasChanges()) {
+            if (! $webRoutesMerger->apply($basePath, $result->webRoutesAnalysis)) {
+                $this->error('Route setup failed.');
+
+                return self::FAILURE;
+            }
+
+            if ($result->webRoutesAnalysis->shouldCreatePagesFile) {
+                $this->line('  <fg=green>→</> routes/owl-admin-pages.php created.');
+            }
+
+            if ($result->webRoutesAnalysis->shouldMergeWebInclude) {
+                $this->line('  <fg=green>→</> routes/web.php updated.');
+            }
+        }
+
         if ($installNpm && $result->missingNpm !== []) {
             $this->info('Installing missing npm packages...');
             $this->line('  <fg=gray>→</> '.$result->npmInstallCommand);
@@ -233,7 +259,7 @@ class FrontendSetupCommand extends BaseKitCommand
         $this->info('Frontend merge plan:');
 
         foreach ($result->planSteps as $step) {
-            if (in_array($step['file'], ['package.json', 'vite.config.js', 'resources/js/app.jsx', 'app/Http/Middleware/HandleInertiaRequests.php'], true)) {
+            if (in_array($step['file'], ['package.json', 'vite.config.js', 'resources/js/app.jsx', 'app/Http/Middleware/HandleInertiaRequests.php', 'routes/owl-admin-pages.php', 'routes/web.php'], true)) {
                 continue;
             }
 
@@ -419,6 +445,50 @@ class FrontendSetupCommand extends BaseKitCommand
         $this->newLine();
     }
 
+    private function renderWebRoutesMerge(
+        ?WebRoutesAnalysis $analysis,
+        bool $dryRun,
+        bool $backup,
+        bool $force,
+    ): void {
+        $this->info('routes:');
+
+        if (! $analysis instanceof WebRoutesAnalysis) {
+            $this->line('  <fg=gray>→</> unavailable');
+
+            return;
+        }
+
+        $this->line('  <fg=gray>→</> owl-admin-pages.php: '.$analysis->pagesFileStatus);
+        $this->line('  <fg=gray>→</> web.php include: '.($analysis->hasInclude ? 'yes' : 'no'));
+        $this->line('  <fg=gray>→</> inertia dependency: '.($analysis->hasInertiaDependency ? 'yes' : 'no'));
+        $this->line('  <fg=gray>→</> action: '.$analysis->action);
+        $this->line('  <fg=gray>→</> reason: '.$analysis->reason);
+
+        if (! $analysis->hasInertiaDependency && $analysis->inertiaInstallHint !== null) {
+            $this->line('  <fg=yellow>→</> install hint: '.$analysis->inertiaInstallHint);
+        }
+
+        if ($analysis->requiresManualMerge()) {
+            $this->line('  <fg=yellow>→</> manual snippet: docs/merge-snippets/web.php');
+        }
+
+        if ($analysis->hasChanges()) {
+            $willWrite = ! $dryRun && ($backup || $force);
+            $this->line('  <fg=gray>→</> will write: '.($dryRun ? 'no (dry-run)' : ($willWrite ? 'yes' : 'no')));
+
+            if (! $dryRun && ! $backup && ! $force) {
+                $this->line('  <fg=red>→</> Route setup changes require --backup or --force.');
+            }
+        } elseif ($analysis->action === WebRoutesAnalysis::ACTION_OK) {
+            $this->line('  <fg=gray>→</> will write: no');
+        } else {
+            $this->line('  <fg=gray>→</> will write: no (manual merge or dependency required)');
+        }
+
+        $this->newLine();
+    }
+
     private function relativeManualSnippetPath(): string
     {
         return 'docs/merge-snippets/vite.config.js';
@@ -446,6 +516,12 @@ class FrontendSetupCommand extends BaseKitCommand
     {
         return $result->inertiaMiddlewareAnalysis instanceof InertiaMiddlewareAnalysis
             && $result->inertiaMiddlewareAnalysis->canAutoMerge();
+    }
+
+    private function webRoutesRequiresProtection(FrontendSetupResult $result): bool
+    {
+        return $result->webRoutesAnalysis instanceof WebRoutesAnalysis
+            && $result->webRoutesAnalysis->hasChanges();
     }
 
     /**

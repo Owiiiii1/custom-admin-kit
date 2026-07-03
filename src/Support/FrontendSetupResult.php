@@ -21,6 +21,7 @@ class FrontendSetupResult
         public readonly ?ViteConfigAnalysis $viteConfigAnalysis = null,
         public readonly ?InertiaAppAnalysis $inertiaAppAnalysis = null,
         public readonly ?InertiaMiddlewareAnalysis $inertiaMiddlewareAnalysis = null,
+        public readonly ?WebRoutesAnalysis $webRoutesAnalysis = null,
     ) {}
 
     public function hasBlockingFailures(): bool
