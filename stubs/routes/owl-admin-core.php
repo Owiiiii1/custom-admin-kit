@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/owl-admin/health', function () {
     return response()->json([
         'status' => 'ok',
-        'kit' => config('owl-admin-kit.version', '0.1.0'),
+        'kit' => \OwlSolutions\CustomAdminKit\Support\PackageVersion::current(),
         'preset' => 'core',
     ]);
 })->name('owl-admin.health');

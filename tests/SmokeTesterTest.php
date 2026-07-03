@@ -2,6 +2,7 @@
 
 namespace OwlSolutions\CustomAdminKit\Tests;
 
+use OwlSolutions\CustomAdminKit\Support\PackageVersion;
 use OwlSolutions\CustomAdminKit\Support\PublishMapResolver;
 use OwlSolutions\CustomAdminKit\Support\SmokeTester;
 
@@ -84,6 +85,51 @@ class SmokeTesterTest extends PackageTestCase
 
         $this->assertNotNull($published);
         $this->assertFalse($published->passed);
+    }
+
+    public function test_run_warns_when_install_state_version_differs_from_current_package_version(): void
+    {
+        config(['owl-admin-kit.version' => '0.2.0']);
+
+        $basePath = $this->tempBasePath();
+        $tester = new SmokeTester(new PublishMapResolver());
+        $results = $tester->run($basePath, [
+            'version' => '0.1.1',
+            'preset' => 'core',
+            'published_files' => [],
+        ], 'core');
+
+        $installState = collect($results)->firstWhere('name', 'install-state');
+        $versionWarning = collect($results)->firstWhere('name', 'install-state-version');
+
+        $this->assertNotNull($installState);
+        $this->assertTrue($installState->passed);
+        $this->assertStringContainsString('v0.1.1', $installState->message);
+
+        if (PackageVersion::equals('0.1.1', PackageVersion::current())) {
+            $this->markTestSkipped('Current package version matches 0.1.1 in this environment.');
+        }
+
+        $this->assertNotNull($versionWarning);
+        $this->assertTrue($versionWarning->isWarning());
+        $this->assertStringContainsString('Install state version v0.1.1 differs from current package version', $versionWarning->message);
+        $this->assertStringContainsString('owl-admin:install --preset=core --repair', (string) $versionWarning->hint);
+    }
+
+    public function test_run_does_not_warn_when_install_state_version_matches_current_package_version(): void
+    {
+        $currentVersion = PackageVersion::current();
+        $basePath = $this->tempBasePath();
+        $tester = new SmokeTester(new PublishMapResolver());
+        $results = $tester->run($basePath, [
+            'version' => $currentVersion,
+            'preset' => 'core',
+            'published_files' => [],
+        ], 'core');
+
+        $versionWarning = collect($results)->firstWhere('name', 'install-state-version');
+
+        $this->assertNull($versionWarning);
     }
 
     private function tempBasePath(): string

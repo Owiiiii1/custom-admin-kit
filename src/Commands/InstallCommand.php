@@ -11,6 +11,7 @@ use OwlSolutions\CustomAdminKit\Support\FileConflictChecker;
 use OwlSolutions\CustomAdminKit\Support\FrontendDependencyChecker;
 use OwlSolutions\CustomAdminKit\Support\InstallReport;
 use OwlSolutions\CustomAdminKit\Support\InstallState;
+use OwlSolutions\CustomAdminKit\Support\PackageVersion;
 use OwlSolutions\CustomAdminKit\Support\PublishMapResolver;
 use OwlSolutions\CustomAdminKit\Support\RequiredEnvChecker;
 use OwlSolutions\CustomAdminKit\Support\VersionChecker;
@@ -211,7 +212,7 @@ class InstallCommand extends BaseKitCommand
         $missingAfter = $frontend->missingPackages($basePath, $preset);
 
         (new InstallState($statePath))->write([
-            'version' => config('owl-admin-kit.version', '0.1.0'),
+            'version' => PackageVersion::current(),
             'installed_at' => now()->toIso8601String(),
             'package' => 'owlsolutions/custom-admin-kit',
             'preset' => $preset,

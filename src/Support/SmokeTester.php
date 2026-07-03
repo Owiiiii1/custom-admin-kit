@@ -25,10 +25,23 @@ class SmokeTester
                 'Run owl-admin:install --preset=core (published files are verified from publish map, not state).',
             );
         } else {
+            $installedVersion = (string) ($installState['version'] ?? '?');
+            $statePreset = (string) ($installState['preset'] ?? 'core');
+
             $results[] = CheckResult::pass(
                 'install-state',
-                'Install state present (v'.($installState['version'] ?? '?').', preset: '.($installState['preset'] ?? 'core').').'
+                'Install state present ('.PackageVersion::display($installedVersion).', preset: '.$statePreset.').'
             );
+
+            $currentVersion = PackageVersion::current();
+
+            if ($installedVersion !== '?' && ! PackageVersion::equals($installedVersion, $currentVersion)) {
+                $results[] = CheckResult::warn(
+                    'install-state-version',
+                    'Install state version '.PackageVersion::display($installedVersion).' differs from current package version '.PackageVersion::display($currentVersion).'.',
+                    'Run owl-admin:install --preset=core --repair or reinstall if needed.',
+                );
+            }
         }
 
         $results[] = CheckResult::pass(
