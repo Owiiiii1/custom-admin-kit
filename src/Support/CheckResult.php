@@ -16,21 +16,22 @@ class CheckResult
         public readonly string $message,
         public readonly ?string $hint = null,
         public readonly string $severity = self::SEVERITY_PASS,
+        public readonly ?string $section = null,
     ) {}
 
-    public static function pass(string $name, string $message): self
+    public static function pass(string $name, string $message, ?string $section = null): self
     {
-        return new self($name, true, $message, null, self::SEVERITY_PASS);
+        return new self($name, true, $message, null, self::SEVERITY_PASS, $section);
     }
 
-    public static function warn(string $name, string $message, ?string $hint = null): self
+    public static function warn(string $name, string $message, ?string $hint = null, ?string $section = null): self
     {
-        return new self($name, true, $message, $hint, self::SEVERITY_WARN);
+        return new self($name, true, $message, $hint, self::SEVERITY_WARN, $section);
     }
 
-    public static function fail(string $name, string $message, ?string $hint = null): self
+    public static function fail(string $name, string $message, ?string $hint = null, ?string $section = null): self
     {
-        return new self($name, false, $message, $hint, self::SEVERITY_FAIL);
+        return new self($name, false, $message, $hint, self::SEVERITY_FAIL, $section);
     }
 
     public function isHardFailure(): bool

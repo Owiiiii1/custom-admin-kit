@@ -26,7 +26,24 @@ class SmokeCommand extends BaseKitCommand
         }
 
         $state = new InstallState(base_path(config('owl-admin-kit.state_file')));
-        $failures = $this->renderCheckResults($tester->run(base_path(), $state->read(), $preset));
+        $results = $tester->run(base_path(), $state->read(), $preset);
+
+        $coreResults = [];
+        $frontendResults = [];
+
+        foreach ($results as $result) {
+            if ($result->section === 'frontend-setup') {
+                $frontendResults[] = $result;
+            } else {
+                $coreResults[] = $result;
+            }
+        }
+
+        $failures = $this->renderCheckResults($coreResults);
+
+        $this->newLine();
+        $this->info('Frontend setup:');
+        $failures += $this->renderCheckResults($frontendResults);
 
         $this->newLine();
 

@@ -44,6 +44,13 @@ class FrontendSetupCommandTest extends PackageTestCase
         $this->artisan('owl-admin:frontend-setup --preset=core')
             ->expectsOutputToContain('package.json changes require --backup or --force.')
             ->assertExitCode(1);
+
+        $statePath = base_path('storage/app/owl-admin-kit/frontend-setup-state.json');
+        $this->assertFileExists($statePath);
+
+        $state = json_decode((string) file_get_contents($statePath), true);
+        $this->assertFalse($state['completed']);
+        $this->assertNotEmpty($state['errors']);
     }
 
     public function test_applies_package_json_merge_with_backup(): void
@@ -62,6 +69,14 @@ class FrontendSetupCommandTest extends PackageTestCase
 
         $decoded = json_decode($updated, true);
         $this->assertArrayHasKey('react', $decoded['dependencies']);
+
+        $statePath = base_path('storage/app/owl-admin-kit/frontend-setup-state.json');
+        $this->assertFileExists($statePath);
+
+        $state = json_decode((string) file_get_contents($statePath), true);
+        $this->assertTrue($state['completed']);
+        $this->assertTrue($state['package_json_updated']);
+        $this->assertSame('core', $state['preset']);
     }
 
     public function test_refuses_vite_config_changes_without_backup_or_force(): void

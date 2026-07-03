@@ -41,6 +41,7 @@ return [
 
     'frontend_setup' => [
         'backup_path' => 'storage/app/owl-admin-kit/backups',
+        'state_file' => 'storage/app/owl-admin-kit/frontend-setup-state.json',
         'supported_presets' => ['core'],
     ],
 

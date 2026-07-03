@@ -2,6 +2,8 @@
 
 namespace OwlSolutions\CustomAdminKit\Tests;
 
+use Illuminate\Support\Facades\Route;
+use OwlSolutions\CustomAdminKit\Support\FrontendSetupState;
 use OwlSolutions\CustomAdminKit\Support\PackageVersion;
 use OwlSolutions\CustomAdminKit\Support\PublishMapResolver;
 use OwlSolutions\CustomAdminKit\Support\SmokeTester;
@@ -130,6 +132,132 @@ class SmokeTesterTest extends PackageTestCase
         $versionWarning = collect($results)->firstWhere('name', 'install-state-version');
 
         $this->assertNull($versionWarning);
+    }
+
+    public function test_run_warns_when_frontend_setup_not_detected(): void
+    {
+        $basePath = $this->tempBasePath();
+        $tester = new SmokeTester(new PublishMapResolver());
+        $results = $tester->run($basePath, null, 'core');
+
+        $frontendWarning = collect($results)->firstWhere('name', 'frontend-setup-detected');
+
+        $this->assertNotNull($frontendWarning);
+        $this->assertTrue($frontendWarning->isWarning());
+        $this->assertSame('frontend-setup', $frontendWarning->section);
+        $this->assertStringContainsString('Frontend setup not detected', $frontendWarning->message);
+    }
+
+    public function test_check_frontend_setup_passes_when_state_and_routes_exist(): void
+    {
+        $basePath = $this->tempBasePath();
+        $this->mockFrontendRoutesExist();
+        $this->seedCompletedFrontendSetup($basePath, withOwlAdminShare: true);
+
+        $tester = new SmokeTester(new PublishMapResolver());
+        $state = (new FrontendSetupState(FrontendSetupState::pathFor($basePath)))->read();
+        $results = $tester->checkFrontendSetup($basePath, $state);
+
+        foreach (['frontend-state', 'route:dashboard', 'route:settings.index', 'route:app-settings.index', 'route:statistics.logs', 'routes-file', 'web-routes-include', 'inertia-share', 'app-jsx', 'vite-manifest'] as $name) {
+            $check = collect($results)->firstWhere('name', $name);
+            $this->assertNotNull($check, "Missing check: {$name}");
+            $this->assertTrue($check->passed, $name.': '.$check->message);
+        }
+    }
+
+    public function test_check_frontend_setup_fails_when_dashboard_route_missing(): void
+    {
+        $basePath = $this->tempBasePath();
+        Route::shouldReceive('has')->andReturn(false);
+        $this->seedCompletedFrontendSetup($basePath, withOwlAdminShare: true);
+
+        $tester = new SmokeTester(new PublishMapResolver());
+        $state = (new FrontendSetupState(FrontendSetupState::pathFor($basePath)))->read();
+        $results = $tester->checkFrontendSetup($basePath, $state);
+
+        $dashboard = collect($results)->firstWhere('name', 'route:dashboard');
+
+        $this->assertNotNull($dashboard);
+        $this->assertFalse($dashboard->passed);
+    }
+
+    public function test_check_frontend_setup_fails_when_owl_admin_share_missing(): void
+    {
+        $basePath = $this->tempBasePath();
+        $this->mockFrontendRoutesExist();
+        $this->seedCompletedFrontendSetup($basePath, withOwlAdminShare: false);
+
+        $tester = new SmokeTester(new PublishMapResolver());
+        $state = (new FrontendSetupState(FrontendSetupState::pathFor($basePath)))->read();
+        $results = $tester->checkFrontendSetup($basePath, $state);
+
+        $share = collect($results)->firstWhere('name', 'inertia-share');
+
+        $this->assertNotNull($share);
+        $this->assertFalse($share->passed);
+        $this->assertStringContainsString('owlAdmin', $share->message);
+    }
+
+    private function mockFrontendRoutesExist(): void
+    {
+        Route::shouldReceive('has')
+            ->andReturnUsing(static fn (string $name): bool => in_array($name, [
+                'dashboard',
+                'settings.index',
+                'app-settings.index',
+                'statistics.logs',
+            ], true));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function completedFrontendState(): array
+    {
+        return [
+            'completed' => true,
+            'completed_at' => now()->toIso8601String(),
+            'package_version' => PackageVersion::current(),
+            'preset' => 'core',
+            'package_json_updated' => true,
+            'vite_config_updated' => true,
+            'app_css_updated' => true,
+            'app_jsx_created' => true,
+            'inertia_middleware_updated' => true,
+            'routes_file_created' => true,
+            'web_routes_included' => true,
+            'npm_install_ran' => false,
+            'build_ran' => true,
+        ];
+    }
+
+    private function seedCompletedFrontendSetup(string $basePath, bool $withOwlAdminShare): void
+    {
+        $stateDir = $basePath.'/storage/app/owl-admin-kit';
+        mkdir($stateDir, 0777, true);
+        file_put_contents(
+            $stateDir.'/frontend-setup-state.json',
+            json_encode($this->completedFrontendState(), JSON_PRETTY_PRINT),
+        );
+
+        mkdir($basePath.'/routes', 0777, true);
+        file_put_contents($basePath.'/routes/owl-admin-pages.php', "<?php\n");
+        file_put_contents(
+            $basePath.'/routes/web.php',
+            "<?php\nrequire __DIR__.'/owl-admin-pages.php';\n",
+        );
+
+        mkdir($basePath.'/resources/js', 0777, true);
+        file_put_contents($basePath.'/resources/js/app.jsx', "import '../css/app.css';\n");
+
+        mkdir($basePath.'/public/build', 0777, true);
+        file_put_contents($basePath.'/public/build/manifest.json', '{}');
+
+        mkdir($basePath.'/app/Http/Middleware', 0777, true);
+        $middleware = $withOwlAdminShare
+            ? "<?php\nclass HandleInertiaRequests {\n public function share() { return ['owlAdmin' => []]; }\n}\n"
+            : "<?php\nclass HandleInertiaRequests {\n public function share() { return []; }\n}\n";
+        file_put_contents($basePath.'/app/Http/Middleware/HandleInertiaRequests.php', $middleware);
     }
 
     private function tempBasePath(): string

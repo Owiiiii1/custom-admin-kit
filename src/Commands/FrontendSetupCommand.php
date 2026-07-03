@@ -6,6 +6,7 @@ use OwlSolutions\CustomAdminKit\Support\FileBackupManager;
 use OwlSolutions\CustomAdminKit\Support\FrontendDependencyChecker;
 use OwlSolutions\CustomAdminKit\Support\FrontendSetupPlanner;
 use OwlSolutions\CustomAdminKit\Support\FrontendSetupResult;
+use OwlSolutions\CustomAdminKit\Support\FrontendSetupStateRecorder;
 use OwlSolutions\CustomAdminKit\Support\InertiaAppAnalysis;
 use OwlSolutions\CustomAdminKit\Support\InertiaAppMerger;
 use OwlSolutions\CustomAdminKit\Support\InertiaMiddlewareAnalysis;
@@ -60,11 +61,26 @@ class FrontendSetupCommand extends BaseKitCommand
         }
 
         $result = $planner->plan($basePath, $preset);
+        $recorder = $dryRun ? null : FrontendSetupStateRecorder::start($preset);
+
+        if ($recorder !== null) {
+            $recorder->addWarnings($result->warnings);
+        }
 
         $this->info('Prerequisites:');
         $failures = $this->renderCheckResults($result->prerequisites);
 
         if ($failures > 0) {
+            if ($recorder !== null) {
+                foreach ($result->prerequisites as $prerequisite) {
+                    if ($prerequisite->isHardFailure()) {
+                        $recorder->addError($prerequisite->message);
+                    }
+                }
+
+                $recorder->persist($basePath);
+            }
+
             $this->error('Frontend setup aborted due to failed prerequisites.');
 
             return self::FAILURE;
@@ -85,51 +101,43 @@ class FrontendSetupCommand extends BaseKitCommand
         }
 
         if ($this->packageJsonRequiresProtection($result) && ! $backup && ! $force) {
-            $this->error('package.json changes require --backup or --force.');
-
-            return self::FAILURE;
+            return $this->failFrontendSetup($recorder, $basePath, 'package.json changes require --backup or --force.');
         }
 
         if ($this->viteConfigRequiresProtection($result) && ! $backup && ! $force) {
-            $this->error('vite.config.js changes require --backup or --force.');
-
-            return self::FAILURE;
+            return $this->failFrontendSetup($recorder, $basePath, 'vite.config.js changes require --backup or --force.');
         }
 
         if ($this->appJsxRequiresProtection($result) && ! $backup && ! $force) {
-            $this->error('app.jsx creation requires --backup or --force.');
-
-            return self::FAILURE;
+            return $this->failFrontendSetup($recorder, $basePath, 'app.jsx creation requires --backup or --force.');
         }
 
         if ($this->handleInertiaRequestsRequiresProtection($result) && ! $backup && ! $force) {
-            $this->error('HandleInertiaRequests changes require --backup or --force.');
-
-            return self::FAILURE;
+            return $this->failFrontendSetup($recorder, $basePath, 'HandleInertiaRequests changes require --backup or --force.');
         }
 
         if ($this->webRoutesRequiresProtection($result) && ! $backup && ! $force) {
-            $this->error('Route setup changes require --backup or --force.');
-
-            return self::FAILURE;
+            return $this->failFrontendSetup($recorder, $basePath, 'Route setup changes require --backup or --force.');
         }
 
         if ($strict && $result->viteConfigAnalysis instanceof ViteConfigAnalysis && $result->viteConfigAnalysis->failsStrictCheck()) {
-            $this->error('vite.config.js is missing the Inertia app entry and cannot be auto-merged. Use the manual snippet or fix inputs manually.');
-
-            return self::FAILURE;
+            return $this->failFrontendSetup(
+                $recorder,
+                $basePath,
+                'vite.config.js is missing the Inertia app entry and cannot be auto-merged. Use the manual snippet or fix inputs manually.',
+            );
         }
 
         if ($strict && $result->inertiaMiddlewareAnalysis instanceof InertiaMiddlewareAnalysis && $result->inertiaMiddlewareAnalysis->failsStrictCheck()) {
-            $this->error('HandleInertiaRequests middleware is missing. Install inertiajs/inertia-laravel and run php artisan inertia:middleware.');
-
-            return self::FAILURE;
+            return $this->failFrontendSetup(
+                $recorder,
+                $basePath,
+                'HandleInertiaRequests middleware is missing. Install inertiajs/inertia-laravel and run php artisan inertia:middleware.',
+            );
         }
 
         if ($result->requiresWrite() && ! $force && ! $backup) {
-            $this->error('Refusing to modify host files without --backup or --force.');
-
-            return self::FAILURE;
+            return $this->failFrontendSetup($recorder, $basePath, 'Refusing to modify host files without --backup or --force.');
         }
 
         $filesToTouch = $this->mergeTargetFiles($result);
@@ -148,61 +156,58 @@ class FrontendSetupCommand extends BaseKitCommand
 
         if ($this->shouldApply($result, 'package.json') && $result->packageJsonMerge instanceof PackageJsonMergePlan) {
             if (! $packageJsonMerger->apply($basePath, $result->packageJsonMerge)) {
-                $this->error('package.json merge failed.');
-
-                return self::FAILURE;
+                return $this->failFrontendSetup($recorder, $basePath, 'package.json merge failed.');
             }
 
+            $recorder?->markPackageJsonUpdated();
             $this->line('  <fg=green>→</> package.json updated.');
         }
 
         if ($this->shouldApply($result, 'vite.config.js') && $result->viteConfigAnalysis instanceof ViteConfigAnalysis) {
             if (! $viteConfigMerger->apply($basePath, $result->viteConfigAnalysis)) {
-                $this->error('vite.config.js merge failed.');
-
-                return self::FAILURE;
+                return $this->failFrontendSetup($recorder, $basePath, 'vite.config.js merge failed.');
             }
 
+            $recorder?->markViteConfigUpdated();
             $this->line('  <fg=green>→</> vite.config.js updated.');
         }
 
         if ($this->shouldApply($result, 'resources/css/app.css')) {
             $this->appendOwlAdminCssImport($basePath);
+            $recorder?->markAppCssUpdated();
             $this->line('  <fg=green>→</> resources/css/app.css updated.');
         }
 
         if ($this->shouldApplyCreate($result, 'resources/js/app.jsx') && $result->inertiaAppAnalysis instanceof InertiaAppAnalysis) {
             if (! $inertiaAppMerger->apply($basePath, $result->inertiaAppAnalysis)) {
-                $this->error('app.jsx creation failed.');
-
-                return self::FAILURE;
+                return $this->failFrontendSetup($recorder, $basePath, 'app.jsx creation failed.');
             }
 
+            $recorder?->markAppJsxCreated();
             $this->line('  <fg=green>→</> resources/js/app.jsx created.');
         }
 
         if ($this->shouldApply($result, 'app/Http/Middleware/HandleInertiaRequests.php') && $result->inertiaMiddlewareAnalysis instanceof InertiaMiddlewareAnalysis) {
             if (! $inertiaMiddlewareMerger->apply($basePath, $result->inertiaMiddlewareAnalysis)) {
-                $this->error('HandleInertiaRequests merge failed.');
-
-                return self::FAILURE;
+                return $this->failFrontendSetup($recorder, $basePath, 'HandleInertiaRequests merge failed.');
             }
 
+            $recorder?->markInertiaMiddlewareUpdated();
             $this->line('  <fg=green>→</> HandleInertiaRequests updated.');
         }
 
         if ($result->webRoutesAnalysis instanceof WebRoutesAnalysis && $result->webRoutesAnalysis->hasChanges()) {
             if (! $webRoutesMerger->apply($basePath, $result->webRoutesAnalysis)) {
-                $this->error('Route setup failed.');
-
-                return self::FAILURE;
+                return $this->failFrontendSetup($recorder, $basePath, 'Route setup failed.');
             }
 
             if ($result->webRoutesAnalysis->shouldCreatePagesFile) {
+                $recorder?->markRoutesFileCreated();
                 $this->line('  <fg=green>→</> routes/owl-admin-pages.php created.');
             }
 
             if ($result->webRoutesAnalysis->shouldMergeWebInclude) {
+                $recorder?->markWebRoutesIncluded();
                 $this->line('  <fg=green>→</> routes/web.php updated.');
             }
         }
@@ -218,10 +223,10 @@ class FrontendSetupCommand extends BaseKitCommand
             }
 
             if (! $installResult->successful) {
-                $this->error('npm install failed.');
-
-                return self::FAILURE;
+                return $this->failFrontendSetup($recorder, $basePath, 'npm install failed.');
             }
+
+            $recorder?->markNpmInstallRan();
         }
 
         if ($runBuild) {
@@ -234,18 +239,37 @@ class FrontendSetupCommand extends BaseKitCommand
             }
 
             if (! $process->isSuccessful()) {
-                $this->error(trim($process->getErrorOutput()) ?: 'npm run build failed.');
-
-                return self::FAILURE;
+                return $this->failFrontendSetup($recorder, $basePath, trim($process->getErrorOutput()) ?: 'npm run build failed.');
             }
 
+            $recorder?->markBuildRan();
             $this->info('npm run build completed.');
+        }
+
+        if ($recorder !== null) {
+            $recorder->complete($basePath);
+            $recorder->persist($basePath);
         }
 
         $this->newLine();
         $this->info('Frontend setup complete.');
 
         return self::SUCCESS;
+    }
+
+    private function failFrontendSetup(
+        ?FrontendSetupStateRecorder $recorder,
+        string $basePath,
+        string $message,
+    ): int {
+        if ($recorder !== null) {
+            $recorder->addError($message);
+            $recorder->persist($basePath);
+        }
+
+        $this->error($message);
+
+        return self::FAILURE;
     }
 
     private function renderPlan(
