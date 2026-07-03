@@ -46,5 +46,18 @@ jobs:
         run: php artisan owl-admin:install --preset=core --install-frontend-deps --backup --force --no-smoke
       - working-directory: test-app
         run: php artisan owl-admin:smoke --preset=core
-      - working-directory: test-app
-        run: php artisan owl-admin:install --preset=full; test $? -eq 1
+      - name: Assert full preset is blocked
+        working-directory: test-app
+        run: |
+          set +e
+          php artisan owl-admin:install --preset=full
+          status=$?
+          set -e
+
+          if [ "$status" -eq 1 ]; then
+            echo "Full preset correctly blocked."
+            exit 0
+          fi
+
+          echo "Expected full preset to fail with exit code 1, got $status"
+          exit 1
