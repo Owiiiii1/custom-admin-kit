@@ -34,6 +34,47 @@ If the command would change `package.json` and you omit `--backup` / `--force`:
 package.json changes require --backup or --force.
 ```
 
+### Non-standard or incomplete `vite.config.js`
+
+Frontend setup inspects the host Vite config without rewriting unknown structures.
+
+**Standard config** (single `laravel()` call, literal `input` string or array): missing inputs can be added automatically:
+
+```bash
+php artisan owl-admin:frontend-setup --preset=core --dry-run
+php artisan owl-admin:frontend-setup --preset=core --backup
+```
+
+**Non-standard config** (no `laravel-vite-plugin`, dynamic `input`, multiple `laravel()` calls): auto-merge is blocked. Copy/adapt the package snippet:
+
+```text
+docs/merge-snippets/vite.config.js
+```
+
+Example dry-run output:
+
+```text
+vite.config.js:
+  status: non-standard
+  missing inputs: resources/js/app.jsx
+  action: manual
+  manual snippet: docs/merge-snippets/vite.config.js
+```
+
+If the Inertia app entry is missing and the config cannot be auto-merged:
+
+```bash
+php artisan owl-admin:frontend-setup --preset=core --strict
+```
+
+exits with an error. Without `--strict`, the command warns and continues planning other merges.
+
+If auto-merge is available but you omit `--backup` / `--force`:
+
+```text
+vite.config.js changes require --backup or --force.
+```
+
 Fix manually:
 
 ```bash

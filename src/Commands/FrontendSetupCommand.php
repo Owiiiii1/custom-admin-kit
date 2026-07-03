@@ -11,6 +11,7 @@ use OwlSolutions\CustomAdminKit\Support\InertiaMiddlewareMerger;
 use OwlSolutions\CustomAdminKit\Support\PackageJsonMergePlan;
 use OwlSolutions\CustomAdminKit\Support\PackageJsonMerger;
 use OwlSolutions\CustomAdminKit\Support\PublishMapResolver;
+use OwlSolutions\CustomAdminKit\Support\ViteConfigAnalysis;
 use OwlSolutions\CustomAdminKit\Support\ViteConfigMerger;
 
 class FrontendSetupCommand extends BaseKitCommand
@@ -21,7 +22,8 @@ class FrontendSetupCommand extends BaseKitCommand
                             {--backup : Backup host files before merge}
                             {--force : Apply merges even when files already exist}
                             {--install-npm : Install missing npm dependencies}
-                            {--run-build : Run npm run build after setup}';
+                            {--run-build : Run npm run build after setup}
+                            {--strict : Fail when vite.config.js is missing the Inertia app entry and cannot auto-merge}';
 
     protected $description = 'Prepare host Laravel frontend for published core admin stubs (v0.2)';
 
@@ -43,6 +45,7 @@ class FrontendSetupCommand extends BaseKitCommand
         $force = (bool) $this->option('force');
         $installNpm = (bool) $this->option('install-npm');
         $runBuild = (bool) $this->option('run-build');
+        $strict = (bool) $this->option('strict');
         $basePath = base_path();
 
         if (! $publishMap->isPresetAvailable($preset)) {
@@ -65,6 +68,7 @@ class FrontendSetupCommand extends BaseKitCommand
         $this->newLine();
         $this->renderPlan($result, $installNpm, $runBuild, $dryRun, $backup, $force);
         $this->renderPackageJsonMerge($result->packageJsonMerge, $dryRun, $backup, $force);
+        $this->renderViteConfigMerge($result->viteConfigAnalysis, $dryRun, $backup, $force);
 
         if ($dryRun) {
             $this->info('Dry run complete — no files were modified.');
@@ -74,6 +78,18 @@ class FrontendSetupCommand extends BaseKitCommand
 
         if ($this->packageJsonRequiresProtection($result) && ! $backup && ! $force) {
             $this->error('package.json changes require --backup or --force.');
+
+            return self::FAILURE;
+        }
+
+        if ($this->viteConfigRequiresProtection($result) && ! $backup && ! $force) {
+            $this->error('vite.config.js changes require --backup or --force.');
+
+            return self::FAILURE;
+        }
+
+        if ($strict && $result->viteConfigAnalysis instanceof ViteConfigAnalysis && $result->viteConfigAnalysis->failsStrictCheck()) {
+            $this->error('vite.config.js is missing the Inertia app entry and cannot be auto-merged. Use the manual snippet or fix inputs manually.');
 
             return self::FAILURE;
         }
@@ -108,8 +124,13 @@ class FrontendSetupCommand extends BaseKitCommand
             $this->line('  <fg=green>→</> package.json updated.');
         }
 
-        if ($this->shouldApply($result, 'vite.config.js')) {
-            $viteConfigMerger->apply($basePath);
+        if ($this->shouldApply($result, 'vite.config.js') && $result->viteConfigAnalysis instanceof ViteConfigAnalysis) {
+            if (! $viteConfigMerger->apply($basePath, $result->viteConfigAnalysis)) {
+                $this->error('vite.config.js merge failed.');
+
+                return self::FAILURE;
+            }
+
             $this->line('  <fg=green>→</> vite.config.js updated.');
         }
 
@@ -180,7 +201,7 @@ class FrontendSetupCommand extends BaseKitCommand
         $this->info('Frontend merge plan:');
 
         foreach ($result->planSteps as $step) {
-            if ($step['file'] === 'package.json') {
+            if (in_array($step['file'], ['package.json', 'vite.config.js'], true)) {
                 continue;
             }
 
@@ -244,10 +265,61 @@ class FrontendSetupCommand extends BaseKitCommand
         $this->newLine();
     }
 
+    private function renderViteConfigMerge(
+        ?ViteConfigAnalysis $analysis,
+        bool $dryRun,
+        bool $backup,
+        bool $force,
+    ): void {
+        $this->info('vite.config.js:');
+
+        if (! $analysis instanceof ViteConfigAnalysis) {
+            $this->line('  <fg=gray>→</> unavailable');
+
+            return;
+        }
+
+        $this->line('  <fg=gray>→</> status: '.$analysis->status);
+        $this->line('  <fg=gray>→</> missing inputs: '.($analysis->missingInputs === []
+            ? 'none'
+            : implode(', ', $analysis->missingInputs)));
+        $this->line('  <fg=gray>→</> action: '.$analysis->action);
+
+        if ($analysis->requiresManualMerge() && $analysis->manualSnippetPath !== null) {
+            $this->line('  <fg=yellow>→</> manual snippet: '.$this->relativeManualSnippetPath());
+        }
+
+        if ($analysis->canAutoMerge()) {
+            $willWrite = ! $dryRun && ($backup || $force);
+            $this->line('  <fg=gray>→</> will write: '.($dryRun ? 'no (dry-run)' : ($willWrite ? 'yes' : 'no')));
+
+            if (! $dryRun && ! $backup && ! $force) {
+                $this->line('  <fg=red>→</> vite.config.js changes require --backup or --force.');
+            }
+        } elseif ($analysis->action === ViteConfigAnalysis::ACTION_SKIP) {
+            $this->line('  <fg=gray>→</> will write: no');
+        } else {
+            $this->line('  <fg=gray>→</> will write: no (manual merge required)');
+        }
+
+        $this->newLine();
+    }
+
+    private function relativeManualSnippetPath(): string
+    {
+        return 'docs/merge-snippets/vite.config.js';
+    }
+
     private function packageJsonRequiresProtection(FrontendSetupResult $result): bool
     {
         return $result->packageJsonMerge instanceof PackageJsonMergePlan
             && $result->packageJsonMerge->hasChanges();
+    }
+
+    private function viteConfigRequiresProtection(FrontendSetupResult $result): bool
+    {
+        return $result->viteConfigAnalysis instanceof ViteConfigAnalysis
+            && $result->viteConfigAnalysis->canAutoMerge();
     }
 
     /**

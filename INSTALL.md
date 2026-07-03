@@ -135,7 +135,7 @@ Not published by core preset:
 | Host file | Action |
 |-----------|--------|
 | `resources/js/app.jsx` | Register Inertia pages |
-| `vite.config.js` | React + Tailwind plugins |
+| `vite.config.js` | Safe input merge via `owl-admin:frontend-setup` (standard Laravel config only) |
 | `package.json` | Safe merge via `owl-admin:frontend-setup` (adds missing deps only) |
 | `routes/web.php` | Dashboard and domain routes — use `docs/merge-snippets/core-routes.php` |
 | `app/Models/User.php` | Host user model |
@@ -231,3 +231,52 @@ package.json changes require --backup or --force.
 | `--run-build` | Run `npm run build` after setup |
 
 Without `--backup` or `--force`, host files are not modified.
+
+### Safe `vite.config.js` merge
+
+Core kit publishes CSS/JS stubs under `resources/css/owl-admin.css`, `resources/js/Pages/`, `resources/js/Layouts/`, and `resources/js/Components/ui/`. v0.2 does **not** add a separate Vite entry for each page — the host Inertia app entry must load them.
+
+`ViteConfigMerger` is conservative:
+
+| Host config | Behavior |
+|-------------|----------|
+| **standard** Laravel `vite.config.js` with `laravel-vite-plugin` and a parseable `input` string/array | Auto-merge missing inputs only (`resources/css/app.css`, `resources/js/app.jsx` or `app.js`) with `--backup` / `--force` |
+| **non-standard** (dynamic input, no laravel plugin, multiple `laravel()` calls, etc.) | No auto-write — manual merge from `docs/merge-snippets/vite.config.js` |
+| **missing** `vite.config.js` | FAIL (prerequisite) |
+
+Dry-run output:
+
+```text
+vite.config.js:
+  status: standard
+  missing inputs: resources/js/app.jsx
+  action: auto-merge
+  will write: no (dry-run)
+```
+
+If the Inertia app entry is missing from `laravel({ input: ... })`:
+
+- default: **WARN** in prerequisites
+- `--strict`: **FAIL** when auto-merge is not possible
+
+Required inputs (when absent):
+
+- `resources/css/app.css`
+- `resources/js/app.jsx` if that file exists, otherwise `resources/js/app.js`
+
+Non-standard configs show:
+
+```text
+vite.config.js:
+  status: non-standard
+  missing inputs: resources/js/app.jsx
+  action: manual
+  manual snippet: docs/merge-snippets/vite.config.js
+  will write: no (manual merge required)
+```
+
+If auto-merge would change `vite.config.js`:
+
+```text
+vite.config.js changes require --backup or --force.
+```

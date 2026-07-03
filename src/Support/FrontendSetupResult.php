@@ -18,6 +18,7 @@ class FrontendSetupResult
         public readonly array $warnings = [],
         public readonly ?string $npmInstallCommand = null,
         public readonly ?PackageJsonMergePlan $packageJsonMerge = null,
+        public readonly ?ViteConfigAnalysis $viteConfigAnalysis = null,
     ) {}
 
     public function hasBlockingFailures(): bool

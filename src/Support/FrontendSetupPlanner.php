@@ -32,9 +32,12 @@ class FrontendSetupPlanner
         $packageJsonSteps = $this->packageJsonMerger->plan($basePath, $preset);
         $packageJsonMerge = $packageJsonSteps[0]['merge'] ?? null;
 
+        $viteConfigSteps = $this->viteConfigMerger->plan($basePath);
+        $viteConfigAnalysis = $viteConfigSteps[0]['analysis'] ?? null;
+
         $planSteps = array_merge(
             $packageJsonSteps,
-            $this->viteConfigMerger->plan($basePath),
+            $viteConfigSteps,
             $this->inertiaAppMerger->plan($basePath),
             $this->planAppCss($basePath),
             $this->inertiaMiddlewareMerger->plan($basePath),
@@ -63,6 +66,7 @@ class FrontendSetupPlanner
             warnings: $warnings,
             npmInstallCommand: $npmCommand,
             packageJsonMerge: $packageJsonMerge instanceof PackageJsonMergePlan ? $packageJsonMerge : null,
+            viteConfigAnalysis: $viteConfigAnalysis instanceof ViteConfigAnalysis ? $viteConfigAnalysis : null,
         );
     }
 
@@ -95,6 +99,20 @@ class FrontendSetupPlanner
             $results[] = File::exists($basePath.'/'.$file)
                 ? CheckResult::pass("file:{$file}", "{$file} exists.")
                 : CheckResult::fail("file:{$file}", "Missing required file: {$file}", $detail);
+        }
+
+        $viteAnalysis = $this->viteConfigMerger->analyze($basePath);
+
+        if ($viteAnalysis->status !== ViteConfigAnalysis::STATUS_MISSING && ! $viteAnalysis->hasAppEntry) {
+            $hint = $viteAnalysis->canAutoMerge()
+                ? 'Run owl-admin:frontend-setup with --backup to add the Inertia app entry.'
+                : 'Merge manually using docs/merge-snippets/vite.config.js';
+
+            $results[] = CheckResult::warn(
+                'vite-app-entry',
+                'vite.config.js laravel input is missing the Inertia app entry (resources/js/app.jsx or app.js).',
+                $hint,
+            );
         }
 
         $appEntry = File::exists($basePath.'/resources/js/app.jsx')
