@@ -31,7 +31,13 @@ abstract class BaseKitCommand extends Command
                 $warnings++;
                 $this->line("  <fg=yellow>!</> {$result->name}: {$result->message}");
                 if ($result->hint) {
-                    $this->line("    <fg=yellow>→ {$result->hint}</>");
+                    foreach (explode("\n", $result->hint) as $hintLine) {
+                        if ($hintLine === '') {
+                            continue;
+                        }
+
+                        $this->line('    '.$hintLine);
+                    }
                 }
                 continue;
             }
@@ -42,7 +48,13 @@ abstract class BaseKitCommand extends Command
                 $failures++;
                 $this->line("  <fg=red>✗</> {$result->name}: {$result->message}");
                 if ($result->hint) {
-                    $this->line("    <fg=yellow>→ {$result->hint}</>");
+                    foreach (explode("\n", $result->hint) as $hintLine) {
+                        if ($hintLine === '') {
+                            continue;
+                        }
+
+                        $this->line('    '.$hintLine);
+                    }
                 }
             }
         }

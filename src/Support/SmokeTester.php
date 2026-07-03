@@ -19,15 +19,17 @@ class SmokeTester
         $results = [];
 
         if ($installState === null) {
-            return [
-                CheckResult::fail('install-state', 'Install state not found.', 'Run owl-admin:install --preset=core'),
-            ];
+            $results[] = CheckResult::warn(
+                'install-state',
+                'Install state not found.',
+                'Run owl-admin:install --preset=core (published files are verified from publish map, not state).',
+            );
+        } else {
+            $results[] = CheckResult::pass(
+                'install-state',
+                'Install state present (v'.($installState['version'] ?? '?').', preset: '.($installState['preset'] ?? 'core').').'
+            );
         }
-
-        $results[] = CheckResult::pass(
-            'install-state',
-            'Install state present (v'.($installState['version'] ?? '?').', preset: '.($installState['preset'] ?? 'core').').'
-        );
 
         $results[] = CheckResult::pass(
             'core-scope',
@@ -44,12 +46,7 @@ class SmokeTester
             ? CheckResult::pass('config', 'config/owl-admin.php exists.')
             : CheckResult::fail('config', 'config/owl-admin.php missing.');
 
-        $published = $installState['published_files'] ?? [];
-        $missing = array_filter($published, fn ($p) => ! File::exists($basePath.'/'.ltrim((string) $p, '/')));
-
-        $results[] = $missing === []
-            ? CheckResult::pass('published-files', count($published).' core file(s) on disk.')
-            : CheckResult::fail('published-files', count($missing).' published file(s) missing.');
+        $results[] = $this->checkPublishedFiles($basePath, $preset);
 
         try {
             $hasKitHealth = Route::has('owl-admin.health');
@@ -70,15 +67,86 @@ class SmokeTester
             ? CheckResult::warn('ui-duplicate', 'Legacy path resources/js/components/ui still exists — remove to avoid duplicates.')
             : CheckResult::pass('ui-duplicate', 'No lowercase components/ui directory.');
 
-        $results[] = CheckResult::warn(
-            'vite-manifest',
-            'Frontend build not verified in core v0.1.',
-            'Merge package.json and run npm run build in host app.'
-        );
+        $results[] = $this->checkViteManifest($basePath);
 
         $expected = count($this->publishMap->copyEntriesForPreset($preset));
-        $results[] = CheckResult::pass('publish-map', "Core publish map defines {$expected} copy target(s).");
+        $results[] = $expected > 0
+            ? CheckResult::pass('publish-map', "Core publish map defines {$expected} copy target(s).")
+            : CheckResult::fail('publish-map', 'Core publish map defines 0 copy target(s).');
 
         return $results;
+    }
+
+    public function checkPublishedFiles(string $basePath, string $preset): CheckResult
+    {
+        $targets = $this->publishTargetsForPreset($preset);
+        $totalCount = count($targets);
+
+        if ($totalCount === 0) {
+            return CheckResult::fail(
+                'published-files',
+                '0/0 core file(s) on disk.',
+                'Publish map is empty or failed to load for preset: '.$preset,
+            );
+        }
+
+        $missing = [];
+
+        foreach ($targets as $target) {
+            if (! File::exists($basePath.'/'.ltrim($target, '/'))) {
+                $missing[] = $target;
+            }
+        }
+
+        $existingCount = $totalCount - count($missing);
+
+        if ($missing !== []) {
+            $hint = "Missing:\n".implode("\n", array_map(static fn (string $path): string => '- '.$path, $missing));
+
+            return CheckResult::fail(
+                'published-files',
+                "{$existingCount}/{$totalCount} core file(s) on disk.",
+                $hint,
+            );
+        }
+
+        return CheckResult::pass(
+            'published-files',
+            "{$existingCount}/{$totalCount} core file(s) on disk.",
+        );
+    }
+
+    public function checkViteManifest(string $basePath): CheckResult
+    {
+        $manifestPath = 'public/build/manifest.json';
+        $absolutePath = $basePath.'/'.ltrim($manifestPath, '/');
+
+        if (File::exists($absolutePath)) {
+            return CheckResult::pass('vite-manifest', "{$manifestPath} exists.");
+        }
+
+        return CheckResult::warn(
+            'vite-manifest',
+            'Frontend build not found.',
+            'Run npm run build.',
+        );
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function publishTargetsForPreset(string $preset): array
+    {
+        $targets = [];
+
+        foreach ($this->publishMap->copyEntriesForPreset($preset) as $entry) {
+            $target = (string) ($entry['target'] ?? '');
+
+            if ($target !== '') {
+                $targets[] = $target;
+            }
+        }
+
+        return $targets;
     }
 }

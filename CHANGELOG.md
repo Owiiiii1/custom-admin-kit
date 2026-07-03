@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.1 — 2026-07-03
+
+- Fix smoke `published-files` count — verify publish map targets on disk (`23/23` format)
+- Do not treat empty install-state `published_files` as success
+- Improve vite manifest smoke check when `public/build/manifest.json` exists
+
 ## 0.1.0 — 2026-07-03 (core-only release)
 
 ### Safe core-only scope
