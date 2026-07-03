@@ -4,6 +4,7 @@ namespace OwlSolutions\CustomAdminKit;
 
 use Illuminate\Support\ServiceProvider;
 use OwlSolutions\CustomAdminKit\Commands\DoctorCommand;
+use OwlSolutions\CustomAdminKit\Commands\FrontendSetupCommand;
 use OwlSolutions\CustomAdminKit\Commands\InstallCommand;
 use OwlSolutions\CustomAdminKit\Commands\MakeAdminCommand;
 use OwlSolutions\CustomAdminKit\Commands\RepairCommand;
@@ -31,6 +32,7 @@ class CustomAdminKitServiceProvider extends ServiceProvider
 
             $this->commands([
                 DoctorCommand::class,
+                FrontendSetupCommand::class,
                 InstallCommand::class,
                 MakeAdminCommand::class,
                 RepairCommand::class,

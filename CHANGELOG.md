@@ -1,5 +1,12 @@
 # Changelog
 
+## [Unreleased] — v0.2.0
+
+- Add `owl-admin:frontend-setup` command for safe host frontend preparation
+- Add frontend merge planners for `package.json`, Vite, Inertia app entry, and middleware
+- Add backup support under `storage/app/owl-admin-kit/backups/`
+- Install command now suggests `owl-admin:frontend-setup` as the next step
+
 ## 0.1.1 — 2026-07-03
 
 - Fix smoke `published-files` count — verify publish map targets on disk (`23/23` format)

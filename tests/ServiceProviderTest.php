@@ -23,5 +23,8 @@ class ServiceProviderTest extends PackageTestCase
 
         $this->artisan('owl-admin:uninstall --help')
             ->assertExitCode(0);
+
+        $this->artisan('owl-admin:frontend-setup --help')
+            ->assertExitCode(0);
     }
 }

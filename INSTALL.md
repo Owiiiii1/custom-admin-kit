@@ -184,3 +184,16 @@ php artisan owl-admin:repair --preset=core --backup --force
 ```
 
 Republishes core stubs from package.
+
+## 10. Frontend setup (v0.2)
+
+After `owl-admin:install --preset=core`, prepare the host frontend:
+
+```bash
+php artisan owl-admin:frontend-setup --preset=core --dry-run
+php artisan owl-admin:frontend-setup --preset=core --backup --install-npm --run-build
+```
+
+The command checks host files (`package.json`, `vite.config.js`, `app.jsx`, `app.css`, `HandleInertiaRequests`) and builds a safe merge plan. Without `--backup` or `--force`, host files are not overwritten.
+
+Backups are stored in `storage/app/owl-admin-kit/backups/YYYY-MM-DD-HH-mm-ss/`.

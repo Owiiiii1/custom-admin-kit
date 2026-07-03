@@ -2,7 +2,7 @@
 
 Installable Laravel package that publishes a **core-only** Inertia + React admin shell and UI components.
 
-**Version:** 0.1.0 (core-only — no landing domain modules)
+**Version:** 0.1.1 (core-only) — **v0.2.0** adds `owl-admin:frontend-setup`
 
 ## Requirements
 
@@ -20,6 +20,7 @@ See [COMPATIBILITY.md](./COMPATIBILITY.md) and [docs/TODO_DEPENDENCIES.md](./doc
 ```bash
 php artisan owl-admin:doctor [--preset=core]
 php artisan owl-admin:install [--preset=core] [--dry-run] [--backup] [--force]
+php artisan owl-admin:frontend-setup [--preset=core] [--dry-run] [--backup] [--install-npm] [--run-build]
 php artisan owl-admin:make-admin
 php artisan owl-admin:smoke [--preset=core]
 php artisan owl-admin:repair [--preset=core] [--backup] [--force]
@@ -42,8 +43,10 @@ composer require owlsolutions/custom-admin-kit
 php artisan owl-admin:doctor
 php artisan owl-admin:install --preset=core --dry-run   # preview
 php artisan owl-admin:install --preset=core --backup
-# merge host: app.jsx, vite.config.js, package.json, routes/web.php, HandleInertiaRequests
-npm install && npm run build    # host app
+php artisan owl-admin:frontend-setup --preset=core --dry-run
+php artisan owl-admin:frontend-setup --preset=core --backup --install-npm --run-build
+# merge host routes/web.php manually in v0.2
+npm install && npm run build    # or use --install-npm --run-build above
 php artisan owl-admin:smoke
 ```
 

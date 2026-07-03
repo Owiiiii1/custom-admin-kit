@@ -39,6 +39,11 @@ return [
     'report_file' => 'storage/app/owl-admin-kit-report.json',
     'backup_suffix' => '.owl-admin-backup',
 
+    'frontend_setup' => [
+        'backup_path' => 'storage/app/owl-admin-kit/backups',
+        'supported_presets' => ['core'],
+    ],
+
     'paths' => [
         'config' => 'config/owl-admin.php',
         'routes_core' => 'routes/owl-admin-core.php',

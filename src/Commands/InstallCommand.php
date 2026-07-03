@@ -247,7 +247,7 @@ class InstallCommand extends BaseKitCommand
 
         $this->newLine();
         $this->info('Core admin kit installed successfully.');
-        $this->line('Next: merge vite.config.js and app.jsx, share owlAdmin in HandleInertiaRequests, register host routes.');
+        $this->line('Next: php artisan owl-admin:frontend-setup --preset=core --backup --install-npm --run-build');
 
         if (! $withSeed) {
             $this->line('Create admin: php artisan owl-admin:make-admin');
