@@ -21,6 +21,7 @@ class FrontendSetupCommandTest extends PackageTestCase
             ->expectsOutputToContain('Frontend merge plan:')
             ->expectsOutputToContain('package.json merge:')
             ->expectsOutputToContain('vite.config.js:')
+            ->expectsOutputToContain('app.jsx:')
             ->expectsOutputToContain('status:')
             ->expectsOutputToContain('missing inputs:')
             ->expectsOutputToContain('action:')
@@ -68,6 +69,73 @@ class FrontendSetupCommandTest extends PackageTestCase
         $this->artisan('owl-admin:frontend-setup --preset=core')
             ->expectsOutputToContain('vite.config.js changes require --backup or --force.')
             ->assertExitCode(1);
+    }
+
+    public function test_creates_missing_app_jsx_with_backup(): void
+    {
+        $files = $this->hostFixtureFiles();
+        unset($files['resources/js/app.jsx']);
+        $files['package.json'] = $this->completePackageJson();
+        $files['vite.config.js'] = <<<'JS'
+import { defineConfig } from 'vite';
+import laravel from 'laravel-vite-plugin';
+
+export default defineConfig({
+    plugins: [
+        laravel({
+            input: ['resources/css/app.css', 'resources/js/app.jsx'],
+            refresh: true,
+        }),
+    ],
+});
+JS;
+        $this->seedHostFiles($files);
+        $this->removeAppJsxIfPresent();
+        file_put_contents(base_path('resources/css/owl-admin.css'), '/* kit */');
+        file_put_contents(base_path('resources/js/bootstrap.js'), "import axios from 'axios';\n");
+
+        $this->artisan('owl-admin:frontend-setup --preset=core --backup --no-interaction')
+            ->expectsOutputToContain('resources/js/app.jsx created.')
+            ->assertExitCode(0);
+
+        $contents = (string) file_get_contents(base_path('resources/js/app.jsx'));
+        $this->assertStringContainsString('createInertiaApp', $contents);
+    }
+
+    public function test_refuses_app_jsx_creation_without_backup_or_force(): void
+    {
+        $files = $this->hostFixtureFiles();
+        unset($files['resources/js/app.jsx']);
+        $files['package.json'] = $this->completePackageJson();
+        $files['vite.config.js'] = <<<'JS'
+import { defineConfig } from 'vite';
+import laravel from 'laravel-vite-plugin';
+
+export default defineConfig({
+    plugins: [
+        laravel({
+            input: ['resources/css/app.css', 'resources/js/app.jsx'],
+            refresh: true,
+        }),
+    ],
+});
+JS;
+        $this->seedHostFiles($files);
+        $this->removeAppJsxIfPresent();
+        file_put_contents(base_path('resources/css/owl-admin.css'), '/* kit */');
+
+        $this->artisan('owl-admin:frontend-setup --preset=core')
+            ->expectsOutputToContain('app.jsx creation requires --backup or --force.')
+            ->assertExitCode(1);
+    }
+
+    private function removeAppJsxIfPresent(): void
+    {
+        $path = base_path('resources/js/app.jsx');
+
+        if (is_file($path)) {
+            unlink($path);
+        }
     }
 
     public function test_planner_fails_when_package_json_missing(): void

@@ -35,10 +35,13 @@ class FrontendSetupPlanner
         $viteConfigSteps = $this->viteConfigMerger->plan($basePath);
         $viteConfigAnalysis = $viteConfigSteps[0]['analysis'] ?? null;
 
+        $inertiaAppSteps = $this->inertiaAppMerger->plan($basePath);
+        $inertiaAppAnalysis = $inertiaAppSteps[0]['analysis'] ?? null;
+
         $planSteps = array_merge(
             $packageJsonSteps,
             $viteConfigSteps,
-            $this->inertiaAppMerger->plan($basePath),
+            $inertiaAppSteps,
             $this->planAppCss($basePath),
             $this->inertiaMiddlewareMerger->plan($basePath),
         );
@@ -67,6 +70,7 @@ class FrontendSetupPlanner
             npmInstallCommand: $npmCommand,
             packageJsonMerge: $packageJsonMerge instanceof PackageJsonMergePlan ? $packageJsonMerge : null,
             viteConfigAnalysis: $viteConfigAnalysis instanceof ViteConfigAnalysis ? $viteConfigAnalysis : null,
+            inertiaAppAnalysis: $inertiaAppAnalysis instanceof InertiaAppAnalysis ? $inertiaAppAnalysis : null,
         );
     }
 
@@ -115,13 +119,34 @@ class FrontendSetupPlanner
             );
         }
 
-        $appEntry = File::exists($basePath.'/resources/js/app.jsx')
-            ? 'resources/js/app.jsx'
-            : (File::exists($basePath.'/resources/js/app.js') ? 'resources/js/app.js' : null);
+        $inertiaAppAnalysis = $this->inertiaAppMerger->analyze($basePath);
 
-        $results[] = $appEntry !== null
-            ? CheckResult::pass('file:app-entry', "{$appEntry} exists.")
-            : CheckResult::fail('file:app-entry', 'Missing resources/js/app.jsx or resources/js/app.js.');
+        if ($inertiaAppAnalysis->action === InertiaAppAnalysis::ACTION_OK) {
+            $results[] = CheckResult::pass(
+                'file:app-entry',
+                'resources/js/app.jsx is a standard Inertia React entrypoint.',
+            );
+        } elseif ($inertiaAppAnalysis->canAutoCreate()) {
+            $results[] = CheckResult::warn(
+                'file:app-entry',
+                'resources/js/app.jsx can be created from the package snippet.',
+                'Run owl-admin:frontend-setup with --backup or --force.',
+            );
+        } elseif ($inertiaAppAnalysis->requiresManualMerge()) {
+            $results[] = CheckResult::warn(
+                'file:app-entry',
+                'Non-standard resources/js/app.jsx detected.',
+                'Merge manually using docs/merge-snippets/app.jsx',
+            );
+        }
+
+        if ($inertiaAppAnalysis->status === InertiaAppAnalysis::STATUS_APP_JS_ONLY) {
+            $results[] = CheckResult::warn(
+                'file:app-js-only',
+                'Host uses resources/js/app.js; create app.jsx and point vite.config.js to app.jsx.',
+                'Run owl-admin:frontend-setup with --backup or --force after reviewing vite.config.js inputs.',
+            );
+        }
 
         $middleware = 'app/Http/Middleware/HandleInertiaRequests.php';
         $results[] = File::exists($basePath.'/'.$middleware)
