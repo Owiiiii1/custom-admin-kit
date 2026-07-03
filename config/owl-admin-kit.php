@@ -130,11 +130,49 @@ return [
     ],
 
     /*
-    | Core frontend npm packages (derived from stub imports + PostCSS/Vite audit).
+    | Core frontend npm packages for package.json merge and npm install checks.
     | route() uses @routes + tightenco/ziggy (Composer), not ziggy-js npm.
-    | @tailwindcss/vite is excluded — landing vite.config uses PostCSS + tailwindcss.
+    | @tailwindcss/vite is excluded unless host vite.config.js uses it.
     */
     'frontend_dependencies' => [
+        'dependencies' => [
+            '@inertiajs/react',
+            'react',
+            'react-dom',
+            'lucide-react',
+            'radix-ui',
+            'class-variance-authority',
+            'clsx',
+            'tailwind-merge',
+        ],
+        'dev_dependencies' => [
+            '@vitejs/plugin-react',
+            'postcss',
+            'autoprefixer',
+            'tailwindcss-animate',
+        ],
+        'conditional_dev_dependencies' => [
+            'vite',
+            'laravel-vite-plugin',
+            'tailwindcss',
+        ],
+        'default_versions' => [
+            'react' => '^18.2.0',
+            'react-dom' => '^18.2.0',
+            '@inertiajs/react' => '^2.0.0',
+            'lucide-react' => '^1.16.0',
+            'radix-ui' => '^1.4.3',
+            'class-variance-authority' => '^0.7.1',
+            'clsx' => '^2.1.1',
+            'tailwind-merge' => '^3.6.0',
+            '@vitejs/plugin-react' => '^6.0.0',
+            'postcss' => '^8.4.31',
+            'autoprefixer' => '^10.4.12',
+            'tailwindcss-animate' => '^1.0.7',
+            'vite' => '^8.0.0',
+            'laravel-vite-plugin' => '^3.1',
+            'tailwindcss' => '^3.2.1',
+        ],
         'from_stub_imports' => [
             'react', 'react-dom', '@inertiajs/react', 'lucide-react', 'radix-ui',
             'class-variance-authority', 'clsx', 'tailwind-merge',

@@ -19,8 +19,39 @@ class FrontendSetupCommandTest extends PackageTestCase
 
         $this->artisan('owl-admin:frontend-setup --preset=core --dry-run')
             ->expectsOutputToContain('Frontend merge plan:')
+            ->expectsOutputToContain('package.json merge:')
+            ->expectsOutputToContain('missing dependencies:')
+            ->expectsOutputToContain('missing devDependencies:')
+            ->expectsOutputToContain('will write:')
             ->expectsOutputToContain('Dry run complete')
             ->assertExitCode(0);
+    }
+
+    public function test_refuses_package_json_changes_without_backup_or_force(): void
+    {
+        $this->seedHostFrontendFiles();
+
+        $this->artisan('owl-admin:frontend-setup --preset=core')
+            ->expectsOutputToContain('package.json changes require --backup or --force.')
+            ->assertExitCode(1);
+    }
+
+    public function test_applies_package_json_merge_with_backup(): void
+    {
+        $this->seedHostFrontendFiles();
+
+        $original = (string) file_get_contents(base_path('package.json'));
+
+        $this->artisan('owl-admin:frontend-setup --preset=core --backup --no-interaction')
+            ->expectsOutputToContain('Backup created:')
+            ->expectsOutputToContain('package.json updated.')
+            ->assertExitCode(0);
+
+        $updated = (string) file_get_contents(base_path('package.json'));
+        $this->assertNotSame($original, $updated);
+
+        $decoded = json_decode($updated, true);
+        $this->assertArrayHasKey('react', $decoded['dependencies']);
     }
 
     public function test_planner_fails_when_package_json_missing(): void

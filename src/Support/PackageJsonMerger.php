@@ -6,71 +6,241 @@ use Illuminate\Support\Facades\File;
 
 class PackageJsonMerger
 {
-    public function __construct(
-        private readonly FrontendDependencyChecker $dependencies,
-    ) {}
+    private const PACKAGE_JSON = 'package.json';
+
+    public function analyze(string $basePath, string $preset = 'core'): PackageJsonMergePlan
+    {
+        $path = $basePath.'/'.self::PACKAGE_JSON;
+
+        if (! File::exists($path)) {
+            return new PackageJsonMergePlan;
+        }
+
+        $decoded = $this->decodePackageJson($path);
+
+        if ($decoded === null) {
+            return new PackageJsonMergePlan;
+        }
+
+        return $this->buildPlan($decoded, $basePath);
+    }
 
     /**
-     * @return list<array{file: string, action: string, detail: string}>
+     * @return list<array{file: string, action: string, detail: string, merge?: PackageJsonMergePlan}>
      */
-    public function plan(string $basePath, string $preset): array
+    public function plan(string $basePath, string $preset = 'core'): array
     {
-        $relativePath = 'package.json';
-        $absolutePath = $basePath.'/'.$relativePath;
+        $path = $basePath.'/'.self::PACKAGE_JSON;
 
-        if (! File::exists($absolutePath)) {
+        if (! File::exists($path)) {
             return [[
-                'file' => $relativePath,
+                'file' => self::PACKAGE_JSON,
                 'action' => 'blocked',
                 'detail' => 'package.json not found.',
             ]];
         }
 
-        $missing = $this->dependencies->missingPackages($basePath, $preset);
+        $mergePlan = $this->analyze($basePath, $preset);
 
-        if ($missing === []) {
+        if (! $mergePlan->hasChanges()) {
             return [[
-                'file' => $relativePath,
+                'file' => self::PACKAGE_JSON,
                 'action' => 'skip',
                 'detail' => 'All required npm packages already listed in package.json.',
+                'merge' => $mergePlan,
             ]];
         }
 
         return [[
-            'file' => $relativePath,
+            'file' => self::PACKAGE_JSON,
             'action' => 'merge',
-            'detail' => 'Add missing npm packages: '.implode(', ', $missing),
+            'detail' => $this->summarizePlan($mergePlan),
+            'merge' => $mergePlan,
         ]];
     }
 
-    /**
-     * @param  list<string>  $packages
-     */
-    public function apply(string $basePath, array $packages): bool
+    public function apply(string $basePath, PackageJsonMergePlan $plan, bool $dryRun = false): bool
     {
-        if ($packages === []) {
+        if (! $plan->hasChanges()) {
             return true;
         }
 
-        $path = $basePath.'/package.json';
-        $decoded = json_decode((string) file_get_contents($path), true);
+        if ($dryRun) {
+            return true;
+        }
 
-        if (! is_array($decoded)) {
+        $path = $basePath.'/'.self::PACKAGE_JSON;
+        $decoded = $this->decodePackageJson($path);
+
+        if ($decoded === null) {
             return false;
         }
 
-        $decoded['devDependencies'] ??= [];
+        $originalJson = (string) file_get_contents($path);
 
-        foreach ($packages as $package) {
-            if (! isset($decoded['dependencies'][$package]) && ! isset($decoded['devDependencies'][$package])) {
-                $decoded['devDependencies'][$package] = '*';
+        if ($plan->missingDependencies !== []) {
+            $decoded['dependencies'] ??= [];
+
+            foreach ($plan->missingDependencies as $name => $version) {
+                if ($this->packageExistsInManifest($decoded, $name)) {
+                    continue;
+                }
+
+                $decoded['dependencies'][$name] = $version;
+            }
+
+            ksort($decoded['dependencies']);
+        }
+
+        if ($plan->missingDevDependencies !== []) {
+            $decoded['devDependencies'] ??= [];
+
+            foreach ($plan->missingDevDependencies as $name => $version) {
+                if ($this->packageExistsInManifest($decoded, $name)) {
+                    continue;
+                }
+
+                $decoded['devDependencies'][$name] = $version;
+            }
+
+            ksort($decoded['devDependencies']);
+        }
+
+        $encoded = json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+
+        if (! is_string($encoded)) {
+            return false;
+        }
+
+        $encoded .= "\n";
+
+        if ($encoded === $originalJson) {
+            return true;
+        }
+
+        File::put($path, $encoded);
+
+        return true;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function configuredDependencies(): array
+    {
+        return $this->packageListWithVersions('dependencies');
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function configuredDevDependencies(string $basePath): array
+    {
+        $packages = $this->packageListWithVersions('dev_dependencies');
+        $conditional = $this->packageListWithVersions('conditional_dev_dependencies');
+
+        foreach ($conditional as $name => $version) {
+            if ($this->shouldIncludeConditionalDevDependency($basePath, $name)) {
+                $packages[$name] = $version;
             }
         }
 
-        ksort($decoded['devDependencies']);
+        ksort($packages);
 
-        File::put($path, json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n");
+        return $packages;
+    }
+
+    private function buildPlan(array $decoded, string $basePath): PackageJsonMergePlan
+    {
+        $missingDependencies = [];
+        $missingDevDependencies = [];
+
+        foreach ($this->configuredDependencies() as $name => $version) {
+            if (! $this->packageExistsInManifest($decoded, $name)) {
+                $missingDependencies[$name] = $version;
+            }
+        }
+
+        foreach ($this->configuredDevDependencies($basePath) as $name => $version) {
+            if (! $this->packageExistsInManifest($decoded, $name)) {
+                $missingDevDependencies[$name] = $version;
+            }
+        }
+
+        ksort($missingDependencies);
+        ksort($missingDevDependencies);
+
+        return new PackageJsonMergePlan($missingDependencies, $missingDevDependencies);
+    }
+
+    /**
+     * @param  array<string, mixed>  $decoded
+     */
+    private function packageExistsInManifest(array $decoded, string $name): bool
+    {
+        foreach (['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies'] as $section) {
+            if (isset($decoded[$section][$name])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return array<string, string>|null
+     */
+    private function decodePackageJson(string $path): ?array
+    {
+        $decoded = json_decode((string) file_get_contents($path), true);
+
+        return is_array($decoded) ? $decoded : null;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function packageListWithVersions(string $configKey): array
+    {
+        $names = config("owl-admin-kit.frontend_dependencies.{$configKey}", []);
+        $versions = config('owl-admin-kit.frontend_dependencies.default_versions', []);
+        $packages = [];
+
+        foreach ($names as $name) {
+            if (! is_string($name) || $name === '') {
+                continue;
+            }
+
+            $packages[$name] = (string) ($versions[$name] ?? '*');
+        }
+
+        return $packages;
+    }
+
+    private function shouldIncludeConditionalDevDependency(string $basePath, string $name): bool
+    {
+        if ($name === '@tailwindcss/vite') {
+            $viteConfig = $basePath.'/vite.config.js';
+
+            return File::exists($viteConfig)
+                && str_contains((string) file_get_contents($viteConfig), '@tailwindcss/vite');
+        }
 
         return true;
+    }
+
+    private function summarizePlan(PackageJsonMergePlan $plan): string
+    {
+        $parts = [];
+
+        if ($plan->missingDependencies !== []) {
+            $parts[] = 'dependencies: '.implode(', ', array_keys($plan->missingDependencies));
+        }
+
+        if ($plan->missingDevDependencies !== []) {
+            $parts[] = 'devDependencies: '.implode(', ', array_keys($plan->missingDevDependencies));
+        }
+
+        return 'Add missing npm packages ('.implode('; ', $parts).')';
     }
 }

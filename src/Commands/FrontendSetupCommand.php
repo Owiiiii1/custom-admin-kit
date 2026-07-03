@@ -8,6 +8,7 @@ use OwlSolutions\CustomAdminKit\Support\FrontendSetupPlanner;
 use OwlSolutions\CustomAdminKit\Support\FrontendSetupResult;
 use OwlSolutions\CustomAdminKit\Support\InertiaAppMerger;
 use OwlSolutions\CustomAdminKit\Support\InertiaMiddlewareMerger;
+use OwlSolutions\CustomAdminKit\Support\PackageJsonMergePlan;
 use OwlSolutions\CustomAdminKit\Support\PackageJsonMerger;
 use OwlSolutions\CustomAdminKit\Support\PublishMapResolver;
 use OwlSolutions\CustomAdminKit\Support\ViteConfigMerger;
@@ -62,12 +63,19 @@ class FrontendSetupCommand extends BaseKitCommand
         }
 
         $this->newLine();
-        $this->renderPlan($result, $installNpm, $runBuild, $dryRun);
+        $this->renderPlan($result, $installNpm, $runBuild, $dryRun, $backup, $force);
+        $this->renderPackageJsonMerge($result->packageJsonMerge, $dryRun, $backup, $force);
 
         if ($dryRun) {
             $this->info('Dry run complete — no files were modified.');
 
             return self::SUCCESS;
+        }
+
+        if ($this->packageJsonRequiresProtection($result) && ! $backup && ! $force) {
+            $this->error('package.json changes require --backup or --force.');
+
+            return self::FAILURE;
         }
 
         if ($result->requiresWrite() && ! $force && ! $backup) {
@@ -90,8 +98,13 @@ class FrontendSetupCommand extends BaseKitCommand
 
         $this->info('Applying frontend setup (v0.2 skeleton merges)...');
 
-        if ($this->shouldApply($result, 'package.json')) {
-            $packageJsonMerger->apply($basePath, $result->missingNpm);
+        if ($this->shouldApply($result, 'package.json') && $result->packageJsonMerge instanceof PackageJsonMergePlan) {
+            if (! $packageJsonMerger->apply($basePath, $result->packageJsonMerge)) {
+                $this->error('package.json merge failed.');
+
+                return self::FAILURE;
+            }
+
             $this->line('  <fg=green>→</> package.json updated.');
         }
 
@@ -156,11 +169,21 @@ class FrontendSetupCommand extends BaseKitCommand
         return self::SUCCESS;
     }
 
-    private function renderPlan(FrontendSetupResult $result, bool $installNpm, bool $runBuild, bool $dryRun): void
-    {
+    private function renderPlan(
+        FrontendSetupResult $result,
+        bool $installNpm,
+        bool $runBuild,
+        bool $dryRun,
+        bool $backup,
+        bool $force,
+    ): void {
         $this->info('Frontend merge plan:');
 
         foreach ($result->planSteps as $step) {
+            if ($step['file'] === 'package.json') {
+                continue;
+            }
+
             $icon = match ($step['action']) {
                 'skip' => '<fg=green>→</>',
                 'merge', 'create' => '<fg=cyan>→</>',
@@ -171,26 +194,60 @@ class FrontendSetupCommand extends BaseKitCommand
             $this->line("  {$icon} [{$step['action']}] {$step['file']}: {$step['detail']}");
         }
 
-        if ($result->missingNpm !== []) {
-            $this->newLine();
-            $this->line('  <fg=yellow>!</> Missing npm packages: '.implode(', ', $result->missingNpm));
-
-            if ($result->npmInstallCommand !== null) {
-                $this->line('  <fg=yellow>→</> '.$result->npmInstallCommand);
-            }
-
-            $this->line('  <fg=gray>→ install with --install-npm'.($dryRun ? ' (dry-run only shows plan)' : '').'</>');
-        }
-
-        if ($installNpm && ! $dryRun) {
+        if ($installNpm && ! $dryRun && ($backup || $force)) {
             $this->line('  <fg=cyan>→</> --install-npm will run npm install for missing packages.');
         }
 
-        if ($runBuild && ! $dryRun) {
+        if ($runBuild && ! $dryRun && ($backup || $force)) {
             $this->line('  <fg=cyan>→</> --run-build will run npm run build after merges.');
         }
 
         $this->newLine();
+    }
+
+    private function renderPackageJsonMerge(
+        ?PackageJsonMergePlan $plan,
+        bool $dryRun,
+        bool $backup,
+        bool $force,
+    ): void {
+        $this->info('package.json merge:');
+
+        if (! $plan instanceof PackageJsonMergePlan) {
+            $this->line('  <fg=gray>→</> unavailable');
+
+            return;
+        }
+
+        if (! $plan->hasChanges()) {
+            $this->line('  <fg=green>→</> missing dependencies: none');
+            $this->line('  <fg=green>→</> missing devDependencies: none');
+            $this->line('  <fg=gray>→</> will write: no');
+
+            return;
+        }
+
+        $this->line('  <fg=yellow>→</> missing dependencies: '.($plan->missingDependencies === []
+            ? 'none'
+            : implode(', ', array_keys($plan->missingDependencies))));
+        $this->line('  <fg=yellow>→</> missing devDependencies: '.($plan->missingDevDependencies === []
+            ? 'none'
+            : implode(', ', array_keys($plan->missingDevDependencies))));
+
+        $willWrite = ! $dryRun && ($backup || $force);
+        $this->line('  <fg=gray>→</> will write: '.($dryRun ? 'no (dry-run)' : ($willWrite ? 'yes' : 'no')));
+
+        if (! $dryRun && ! $backup && ! $force && $plan->hasChanges()) {
+            $this->line('  <fg=red>→</> package.json changes require --backup or --force.');
+        }
+
+        $this->newLine();
+    }
+
+    private function packageJsonRequiresProtection(FrontendSetupResult $result): bool
+    {
+        return $result->packageJsonMerge instanceof PackageJsonMergePlan
+            && $result->packageJsonMerge->hasChanges();
     }
 
     /**

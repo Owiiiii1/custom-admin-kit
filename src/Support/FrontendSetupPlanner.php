@@ -29,15 +29,20 @@ class FrontendSetupPlanner
             );
         }
 
+        $packageJsonSteps = $this->packageJsonMerger->plan($basePath, $preset);
+        $packageJsonMerge = $packageJsonSteps[0]['merge'] ?? null;
+
         $planSteps = array_merge(
-            $this->packageJsonMerger->plan($basePath, $preset),
+            $packageJsonSteps,
             $this->viteConfigMerger->plan($basePath),
             $this->inertiaAppMerger->plan($basePath),
             $this->planAppCss($basePath),
             $this->inertiaMiddlewareMerger->plan($basePath),
         );
 
-        $missingNpm = $this->frontendDependencies->missingPackages($basePath, $preset);
+        $missingNpm = $packageJsonMerge instanceof PackageJsonMergePlan
+            ? $packageJsonMerge->allMissingPackageNames()
+            : $this->frontendDependencies->missingPackages($basePath, $preset);
         $npmCommand = $missingNpm !== []
             ? $this->frontendDependencies->buildInstallCommand($missingNpm)
             : null;
@@ -57,6 +62,7 @@ class FrontendSetupPlanner
             missingNpm: $missingNpm,
             warnings: $warnings,
             npmInstallCommand: $npmCommand,
+            packageJsonMerge: $packageJsonMerge instanceof PackageJsonMergePlan ? $packageJsonMerge : null,
         );
     }
 

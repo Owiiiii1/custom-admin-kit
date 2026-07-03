@@ -17,6 +17,7 @@ class FrontendSetupResult
         public readonly array $missingNpm = [],
         public readonly array $warnings = [],
         public readonly ?string $npmInstallCommand = null,
+        public readonly ?PackageJsonMergePlan $packageJsonMerge = null,
     ) {}
 
     public function hasBlockingFailures(): bool

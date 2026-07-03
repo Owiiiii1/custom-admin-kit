@@ -19,7 +19,20 @@ Doctor lists missing packages and a suggested command:
   → npm install react react-dom ...
 ```
 
-**Why the package does not overwrite `package.json`:** merging would destroy host scripts, versions, and unrelated dependencies. The installer only **checks** or optionally **adds** missing packages via `npm install`.
+**Why the package does not overwrite `package.json` during install:** merging would destroy host scripts, versions, and unrelated dependencies. The installer only **checks** or optionally runs `npm install` via `--install-frontend-deps`.
+
+**Safe merge (v0.2):** use `owl-admin:frontend-setup` to add missing packages only:
+
+```bash
+php artisan owl-admin:frontend-setup --preset=core --dry-run
+php artisan owl-admin:frontend-setup --preset=core --backup
+```
+
+If the command would change `package.json` and you omit `--backup` / `--force`:
+
+```text
+package.json changes require --backup or --force.
+```
 
 Fix manually:
 
@@ -143,3 +156,5 @@ Do **not** publish Spatie migrations if tables already exist. See [docs/TODO_DEP
 Pre-sync package backup: `.backup-before-audit-sync/`
 
 Install-time file backups: `*.owl-admin-backup-YYYYMMDDHHMMSS` next to overwritten files.
+
+Frontend setup backups: `storage/app/owl-admin-kit/backups/YYYY-MM-DD-HH-mm-ss/` (includes `package.json` when `--backup` is used).

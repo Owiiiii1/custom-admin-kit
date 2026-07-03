@@ -24,13 +24,15 @@ Checks: PHP/Laravel/Node, writable paths, `.env` keys, recommended Composer depe
 
 ## 3. Frontend npm dependencies
 
-The package **does not overwrite** `package.json` or `vite.config.js` — those require manual merge in the host app.
+The package **does not overwrite** `package.json` or `vite.config.js` during `owl-admin:install` — use `owl-admin:frontend-setup` for safe merges (v0.2).
 
-Core preset publishes JSX/CSS stubs that need npm packages. Doctor and install scan `package.json` for:
+Core preset publishes JSX/CSS stubs that need npm packages. Doctor and install scan `package.json` for packages listed in `config/owl-admin-kit.php` → `frontend_dependencies`:
 
-**From stub imports:** `react`, `react-dom`, `@inertiajs/react`, `lucide-react`, `radix-ui`, `class-variance-authority`, `clsx`, `tailwind-merge`
+**dependencies:** `@inertiajs/react`, `react`, `react-dom`, `lucide-react`, `radix-ui`, `class-variance-authority`, `clsx`, `tailwind-merge`
 
-**Build toolchain (audit-aligned PostCSS + Vite):** `vite`, `@vitejs/plugin-react`, `laravel-vite-plugin`, `tailwindcss`, `postcss`, `autoprefixer`, `tailwindcss-animate`
+**devDependencies:** `@vitejs/plugin-react`, `postcss`, `autoprefixer`, `tailwindcss-animate`
+
+**Conditional devDependencies (added only when missing):** `vite`, `laravel-vite-plugin`, `tailwindcss` — Laravel 13 often already includes these. `@tailwindcss/vite` is never added unless the host `vite.config.js` already references it.
 
 `route()` in AdminLayout uses `@routes` in Blade + `tightenco/ziggy` (Composer) — **not** `ziggy-js` npm.
 
@@ -134,7 +136,7 @@ Not published by core preset:
 |-----------|--------|
 | `resources/js/app.jsx` | Register Inertia pages |
 | `vite.config.js` | React + Tailwind plugins |
-| `package.json` | Ensure deps + scripts (package adds via `--install-frontend-deps` only) |
+| `package.json` | Safe merge via `owl-admin:frontend-setup` (adds missing deps only) |
 | `routes/web.php` | Dashboard and domain routes — use `docs/merge-snippets/core-routes.php` |
 | `app/Models/User.php` | Host user model |
 | `HandleInertiaRequests` | Share `owlAdmin.brand_name` from `config('owl-admin.brand_name')` |
@@ -194,6 +196,38 @@ php artisan owl-admin:frontend-setup --preset=core --dry-run
 php artisan owl-admin:frontend-setup --preset=core --backup --install-npm --run-build
 ```
 
-The command checks host files (`package.json`, `vite.config.js`, `app.jsx`, `app.css`, `HandleInertiaRequests`) and builds a safe merge plan. Without `--backup` or `--force`, host files are not overwritten.
+The command checks host files (`package.json`, `vite.config.js`, `app.jsx`, `app.css`, `HandleInertiaRequests`) and builds a safe merge plan.
 
-Backups are stored in `storage/app/owl-admin-kit/backups/YYYY-MM-DD-HH-mm-ss/`.
+### Safe `package.json` merge
+
+`PackageJsonMerger` reads the host `package.json` and **adds only missing** packages from `frontend_dependencies`. It:
+
+- preserves existing package names and versions
+- never removes unrelated dependencies
+- writes with `JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES`
+- sorts only dependency groups that were modified
+
+Dry-run output:
+
+```text
+package.json merge:
+  missing dependencies: react, @inertiajs/react, ...
+  missing devDependencies: @vitejs/plugin-react, postcss, ...
+  will write: no (dry-run)
+```
+
+If changes are needed, the command **refuses to write** without `--backup` or `--force`:
+
+```text
+package.json changes require --backup or --force.
+```
+
+| Flag | Behavior |
+|------|----------|
+| `--dry-run` | Show merge plan; never write files |
+| `--backup` | Copy host files to `storage/app/owl-admin-kit/backups/YYYY-MM-DD-HH-mm-ss/` before merge |
+| `--force` | Apply merges without creating a backup |
+| `--install-npm` | Run `npm install` for packages still missing after merge |
+| `--run-build` | Run `npm run build` after setup |
+
+Without `--backup` or `--force`, host files are not modified.

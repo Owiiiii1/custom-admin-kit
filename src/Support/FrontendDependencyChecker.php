@@ -66,8 +66,9 @@ class FrontendDependencyChecker
         }
 
         $packages = array_merge(
-            $this->packagesFromStubImports($this->stubsPath()),
-            self::BUILD_TOOLCHAIN_PACKAGES,
+            config('owl-admin-kit.frontend_dependencies.dependencies', []),
+            config('owl-admin-kit.frontend_dependencies.dev_dependencies', []),
+            config('owl-admin-kit.frontend_dependencies.conditional_dev_dependencies', []),
         );
 
         sort($packages);
