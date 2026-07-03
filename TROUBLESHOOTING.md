@@ -1,5 +1,198 @@
 # Troubleshooting
 
+## Frontend setup (v0.2.0)
+
+### npm build fails
+
+After `owl-admin:frontend-setup`, run:
+
+```bash
+npm install && npm run build
+```
+
+Or use the command flags:
+
+```bash
+php artisan owl-admin:frontend-setup --preset=core --backup --install-npm --run-build
+```
+
+Common causes:
+
+| Symptom | Fix |
+|---------|-----|
+| `Cannot find module 'react'` / missing deps | Re-run with `--install-npm` or merge `package.json` manually |
+| Vite cannot resolve `@/Components/ui` | Ensure `vite.config.js` has `@` alias (standard Laravel 13 config) |
+| `app.jsx` not in manifest | Re-run frontend-setup with `--backup`; check dry-run for missing Vite inputs |
+| Build succeeds but smoke fails `vite-manifest` | Run `npm run build`; confirm `public/build/manifest.json` exists |
+
+Inspect dry-run first:
+
+```bash
+php artisan owl-admin:frontend-setup --preset=core --dry-run
+```
+
+### Tailwind v4 issues
+
+Laravel 13 ships Tailwind v4 with `@import 'tailwindcss'` and `@tailwindcss/vite`. The package stub `resources/css/owl-admin.css` uses Tailwind v4 syntax (`@theme inline`).
+
+If you see errors like **`Cannot apply unknown utility class border-border`** or **`@tailwind` directive errors**:
+
+1. Ensure `owl-admin.css` is the v0.2 stub (not a v3 `@tailwind base/components/utilities` file)
+2. Frontend-setup adds `@import './owl-admin.css'` and `@plugin "tailwindcss-animate"` to `resources/css/app.css` on Tailwind v4 hosts
+3. Install `tailwindcss-animate` if missing:
+
+```bash
+npm install -D tailwindcss-animate
+```
+
+Do **not** mix Tailwind v3 PostCSS-only setup with the v4 stub without adapting `app.css`.
+
+### vite.config.js non-standard
+
+Frontend setup only auto-merges **standard** Laravel Vite configs: single `laravel()` call from `laravel-vite-plugin` with a literal `input` string or array.
+
+**Non-standard** examples that block auto-merge:
+
+- Dynamic `input` (variables, spread, function calls)
+- Multiple `laravel()` plugin calls
+- Missing `laravel-vite-plugin`
+- Custom build pipeline without parseable inputs
+
+Dry-run shows:
+
+```text
+vite.config.js:
+  status: non-standard
+  action: manual
+  manual snippet: docs/merge-snippets/vite.config.js
+```
+
+Copy/adapt the snippet, then re-run smoke:
+
+```bash
+npm run build
+php artisan owl-admin:smoke --preset=core
+```
+
+Use `--strict` to fail early when auto-merge is impossible:
+
+```bash
+php artisan owl-admin:frontend-setup --preset=core --strict --dry-run
+```
+
+### HandleInertiaRequests missing
+
+`AdminLayout.jsx` reads shared Inertia props:
+
+```js
+usePage().props.owlAdmin.brand_name
+usePage().props.owlAdmin.logo_path
+```
+
+If middleware does not exist, create it:
+
+```bash
+composer require inertiajs/inertia-laravel
+php artisan inertia:middleware
+```
+
+Register the middleware in `bootstrap/app.php` (Laravel 11+) if not already present, then re-run:
+
+```bash
+php artisan owl-admin:frontend-setup --preset=core --backup
+```
+
+With `--strict`, missing middleware fails instead of warning.
+
+If `share()` is non-standard, merge manually from `docs/merge-snippets/HandleInertiaRequests.php`.
+
+### inertia:middleware not run
+
+Symptoms:
+
+- Doctor warns about missing `HandleInertiaRequests`
+- Frontend-setup reports `HandleInertiaRequests: status: missing`
+- Inertia pages render without shared props or fail at runtime
+
+Fix:
+
+```bash
+composer require inertiajs/inertia-laravel
+php artisan inertia:middleware
+php artisan owl-admin:frontend-setup --preset=core --backup
+```
+
+Ensure `HandleInertiaRequests` is in the web middleware stack (`bootstrap/app.php` → `->withMiddleware(...)`).
+
+### routes/web.php merge blocked
+
+Frontend-setup creates `routes/owl-admin-pages.php` and tries to add:
+
+```php
+require __DIR__.'/owl-admin-pages.php';
+```
+
+Auto-merge is blocked when `routes/web.php` is **non-standard** (conditional requires, non-literal structure, or existing owl-admin include).
+
+Dry-run output:
+
+```text
+routes:
+  web.php include: no
+  action: manual
+  manual snippet: docs/merge-snippets/web.php
+```
+
+Without `--backup` / `--force`:
+
+```text
+Route setup changes require --backup or --force.
+```
+
+Add the include manually, then verify:
+
+```bash
+php artisan route:list --name=dashboard
+php artisan route:list --name=settings
+php artisan owl-admin:smoke --preset=core
+```
+
+### auth/login still required
+
+Core preset does **not** publish login/register routes or Breeze/Jetstream scaffolding. Smoke may report **login route not found** until the host wires authentication.
+
+Options:
+
+1. Install Laravel Breeze (Inertia + React) or your existing auth stack
+2. Add minimal login routes in the host app
+3. For local testing only, temporarily access routes after manual session auth
+
+The package registers **admin page routes** (`/dashboard`, `/settings`, etc.) behind `AdminRouteMiddleware::stack()` — they expect an authenticated user, not a guest.
+
+### admin user not created
+
+Install does **not** create a default `admin@admin.com` user. Create one explicitly:
+
+```bash
+php artisan owl-admin:make-admin
+```
+
+Or during install with `--seed`:
+
+```env
+OWL_ADMIN_EMAIL=you@example.com
+OWL_ADMIN_PASSWORD=your-secure-password
+OWL_ADMIN_NAME="Site Admin"
+```
+
+```bash
+php artisan owl-admin:install --preset=core --seed --backup
+```
+
+Non-interactive `--seed` requires `OWL_ADMIN_EMAIL` and `OWL_ADMIN_PASSWORD` in `.env`. Passwords `admin` and email `admin@admin.com` are always rejected.
+
+---
+
 ## Doctor failures
 
 ### Required host dependency missing
@@ -279,10 +472,10 @@ chmod -R ug+rwx storage bootstrap/cache
 
 Do **not** publish Spatie migrations if tables already exist. See [docs/TODO_DEPENDENCIES.md](./docs/TODO_DEPENDENCIES.md).
 
-## Backup location
+## Backup locations
 
-Pre-sync package backup: `.backup-before-audit-sync/`
-
-Install-time file backups: `*.owl-admin-backup-YYYYMMDDHHMMSS` next to overwritten files.
-
-Frontend setup backups: `storage/app/owl-admin-kit/backups/YYYY-MM-DD-HH-mm-ss/` (includes `package.json` when `--backup` is used).
+| Context | Location |
+|---------|----------|
+| **Frontend setup** (`--backup`) | `storage/app/owl-admin-kit/backups/YYYY-MM-DD-HH-mm-ss/` |
+| Install stub overwrite | `*.owl-admin-backup-YYYYMMDDHHMMSS` next to the file |
+| Pre-sync package backup | `.backup-before-audit-sync/` (maintainer only) |

@@ -1,6 +1,24 @@
-# Installation Guide — v0.1 core-only
+# Installation Guide
+
+## Version scope
+
+| Version | What it does |
+|---------|----------------|
+| **v0.1.1** | **Core stubs only** — `owl-admin:install` publishes 23 files (config, health route, JSX/CSS/UI). Host must merge `package.json`, Vite, Inertia entry, routes, and middleware manually. |
+| **v0.2.0** | **Core stubs + frontend setup** — everything in v0.1.x plus `owl-admin:frontend-setup` for safe merges of host frontend files and core admin routes. |
+
+Recommended flow for new projects: install core stubs, then run frontend setup with `--backup`.
+
+---
 
 ## 1. Require package
+
+```bash
+composer config repositories.custom-admin-kit vcs git@github.com:Owiiiii1/custom-admin-kit.git
+composer require owlsolutions/custom-admin-kit:v0.2.0
+```
+
+Or from Packagist / path repository:
 
 ```bash
 composer require owlsolutions/custom-admin-kit
@@ -10,6 +28,7 @@ Recommended host packages (doctor warns if missing):
 
 ```bash
 composer require inertiajs/inertia-laravel tightenco/ziggy
+php artisan inertia:middleware
 ```
 
 ## 2. Doctor
@@ -187,16 +206,45 @@ php artisan owl-admin:repair --preset=core --backup --force
 
 Republishes core stubs from package.
 
-## 10. Frontend setup (v0.2)
+## 10. Frontend setup (v0.2.0)
 
-After `owl-admin:install --preset=core`, prepare the host frontend:
+After `owl-admin:install --preset=core`, prepare the host frontend and core admin routes:
 
 ```bash
 php artisan owl-admin:frontend-setup --preset=core --dry-run
 php artisan owl-admin:frontend-setup --preset=core --backup --install-npm --run-build
+php artisan owl-admin:smoke --preset=core
 ```
 
-The command checks host files (`package.json`, `vite.config.js`, `app.jsx`, `app.css`, `HandleInertiaRequests`) and builds a safe merge plan.
+### What `frontend-setup` may change
+
+| Host file | Action |
+|-----------|--------|
+| `package.json` | Merge — add missing npm dependencies/devDependencies only |
+| `vite.config.js` | Merge — add missing Vite inputs + `@vitejs/plugin-react` (standard configs) |
+| `resources/css/app.css` | Merge — `@import './owl-admin.css'` + `@plugin "tailwindcss-animate"` on Tailwind v4 hosts |
+| `resources/js/app.jsx` | Create — standard Inertia React entrypoint (does not overwrite existing `app.jsx`) |
+| `app/Http/Middleware/HandleInertiaRequests.php` | Merge — shared `owlAdmin` props |
+| `routes/owl-admin-pages.php` | Create — dashboard, settings, app-settings, statistics/logs |
+| `routes/web.php` | Merge — `require __DIR__.'/owl-admin-pages.php';` (standard configs only) |
+
+**Never overwritten:** existing dependency versions, non-standard host files, `resources/js/app.js`, auth routes, `User.php`.
+
+### Backup policy
+
+- **Always use `--backup`** for production or shared environments before the first frontend setup.
+- Without `--backup` or `--force`, the command **refuses to write** when changes are needed.
+- Backups are stored in:
+
+```text
+storage/app/owl-admin-kit/backups/YYYY-MM-DD-HH-mm-ss/
+```
+
+Example backed-up files: `package.json`, `vite.config.js`, `resources/css/app.css`, `HandleInertiaRequests.php`, `routes/web.php`.
+
+Install-time stub backups (separate) remain next to overwritten files as `*.owl-admin-backup-YYYYMMDDHHMMSS`.
+
+The command checks host files and builds a safe merge plan before writing.
 
 ### Safe `package.json` merge
 

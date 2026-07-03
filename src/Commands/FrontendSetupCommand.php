@@ -568,7 +568,19 @@ class FrontendSetupCommand extends BaseKitCommand
         $contents = (string) file_get_contents($path);
 
         if (! str_contains($contents, 'owl-admin.css')) {
-            file_put_contents($path, "@import './owl-admin.css';\n\n".$contents);
+            $contents = "@import './owl-admin.css';\n\n".$contents;
         }
+
+        if (str_contains($contents, "@import 'tailwindcss'")
+            && ! str_contains($contents, 'tailwindcss-animate')) {
+            $contents = preg_replace(
+                "/(@import 'tailwindcss';)/",
+                "$1\n@plugin \"tailwindcss-animate\";",
+                $contents,
+                1,
+            ) ?? $contents;
+        }
+
+        file_put_contents($path, $contents);
     }
 }

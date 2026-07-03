@@ -33,11 +33,12 @@ class FrontendSetupPlanner
         $packageJsonSteps = $this->packageJsonMerger->plan($basePath, $preset);
         $packageJsonMerge = $packageJsonSteps[0]['merge'] ?? null;
 
-        $viteConfigSteps = $this->viteConfigMerger->plan($basePath);
-        $viteConfigAnalysis = $viteConfigSteps[0]['analysis'] ?? null;
-
         $inertiaAppSteps = $this->inertiaAppMerger->plan($basePath);
         $inertiaAppAnalysis = $inertiaAppSteps[0]['analysis'] ?? null;
+        $pendingAppJsx = $inertiaAppAnalysis instanceof InertiaAppAnalysis && $inertiaAppAnalysis->canAutoCreate();
+
+        $viteConfigSteps = $this->viteConfigMerger->plan($basePath, $pendingAppJsx);
+        $viteConfigAnalysis = $viteConfigSteps[0]['analysis'] ?? null;
 
         $inertiaMiddlewareSteps = $this->inertiaMiddlewareMerger->plan($basePath);
         $inertiaMiddlewareAnalysis = $inertiaMiddlewareSteps[0]['analysis'] ?? null;
@@ -115,7 +116,12 @@ class FrontendSetupPlanner
                 : CheckResult::fail("file:{$file}", "Missing required file: {$file}", $detail);
         }
 
-        $viteAnalysis = $this->viteConfigMerger->analyze($basePath);
+        $inertiaAppAnalysis = $this->inertiaAppMerger->analyze($basePath);
+
+        $viteAnalysis = $this->viteConfigMerger->analyze(
+            $basePath,
+            $inertiaAppAnalysis->canAutoCreate(),
+        );
 
         if ($viteAnalysis->status !== ViteConfigAnalysis::STATUS_MISSING && ! $viteAnalysis->hasAppEntry) {
             $hint = $viteAnalysis->canAutoMerge()
@@ -128,8 +134,6 @@ class FrontendSetupPlanner
                 $hint,
             );
         }
-
-        $inertiaAppAnalysis = $this->inertiaAppMerger->analyze($basePath);
 
         if ($inertiaAppAnalysis->action === InertiaAppAnalysis::ACTION_OK) {
             $results[] = CheckResult::pass(

@@ -31,12 +31,13 @@ class ViteConfigAnalysis
         public readonly string $action = self::ACTION_SKIP,
         public readonly ?string $manualSnippetPath = null,
         public readonly ?string $detail = null,
+        public readonly bool $needsReactPlugin = false,
     ) {}
 
     public function canAutoMerge(): bool
     {
         return $this->status === self::STATUS_STANDARD
-            && $this->missingInputs !== [];
+            && ($this->missingInputs !== [] || $this->needsReactPlugin);
     }
 
     public function requiresManualMerge(): bool

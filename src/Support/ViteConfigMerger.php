@@ -18,7 +18,7 @@ class ViteConfigMerger
         'resources/js/app.js',
     ];
 
-    public function analyze(string $basePath): ViteConfigAnalysis
+    public function analyze(string $basePath, bool $pendingAppJsx = false): ViteConfigAnalysis
     {
         $path = $basePath.'/'.self::CONFIG_FILE;
 
@@ -34,8 +34,9 @@ class ViteConfigMerger
         $hasLaravelPlugin = str_contains($contents, 'laravel-vite-plugin');
         $currentInputs = $this->parseLaravelInputs($contents);
         $hasAppEntry = $this->inputsContainAppEntry($currentInputs);
-        $targetInputs = $this->targetInputs($basePath);
+        $targetInputs = $this->targetInputs($basePath, $pendingAppJsx);
         $missingInputs = $this->diffMissingInputs($currentInputs, $targetInputs);
+        $needsReactPlugin = $this->needsReactPlugin($contents, $targetInputs);
 
         if (! $hasLaravelPlugin || ! $this->isStandardStructure($contents)) {
             return new ViteConfigAnalysis(
@@ -47,19 +48,30 @@ class ViteConfigMerger
                 action: $this->resolveNonStandardAction($missingInputs, $hasAppEntry),
                 manualSnippetPath: $this->manualSnippetPath(),
                 detail: $this->nonStandardDetail($hasLaravelPlugin, $currentInputs),
+                needsReactPlugin: $needsReactPlugin,
             );
         }
 
-        if ($missingInputs === []) {
+        if ($missingInputs === [] && ! $needsReactPlugin) {
             return new ViteConfigAnalysis(
                 status: ViteConfigAnalysis::STATUS_STANDARD,
                 currentInputs: $currentInputs,
                 missingInputs: [],
                 hasLaravelPlugin: true,
-                hasAppEntry: $hasAppEntry,
+                hasAppEntry: $this->inputsContainAppEntry($targetInputs) || $hasAppEntry,
                 action: ViteConfigAnalysis::ACTION_SKIP,
                 detail: 'Laravel Vite plugin includes required Inertia entry inputs.',
             );
+        }
+
+        $details = [];
+
+        if ($missingInputs !== []) {
+            $details[] = 'Add missing laravel plugin input entries';
+        }
+
+        if ($needsReactPlugin) {
+            $details[] = 'register @vitejs/plugin-react';
         }
 
         return new ViteConfigAnalysis(
@@ -67,28 +79,29 @@ class ViteConfigMerger
             currentInputs: $currentInputs,
             missingInputs: $missingInputs,
             hasLaravelPlugin: true,
-            hasAppEntry: $hasAppEntry,
+            hasAppEntry: $this->inputsContainAppEntry(array_merge($currentInputs, $missingInputs)) || $hasAppEntry,
             action: ViteConfigAnalysis::ACTION_AUTO_MERGE,
-            detail: 'Add missing laravel plugin input entries.',
+            detail: implode('; ', $details).'.',
+            needsReactPlugin: $needsReactPlugin,
         );
     }
 
-    public function canAutoMerge(string $basePath): bool
+    public function canAutoMerge(string $basePath, bool $pendingAppJsx = false): bool
     {
-        return $this->analyze($basePath)->canAutoMerge();
+        return $this->analyze($basePath, $pendingAppJsx)->canAutoMerge();
     }
 
     /**
      * @return list<string>
      */
-    public function getMissingInputs(string $basePath): array
+    public function getMissingInputs(string $basePath, bool $pendingAppJsx = false): array
     {
-        return $this->analyze($basePath)->missingInputs;
+        return $this->analyze($basePath, $pendingAppJsx)->missingInputs;
     }
 
-    public function dryRun(string $basePath): ViteConfigAnalysis
+    public function dryRun(string $basePath, bool $pendingAppJsx = false): ViteConfigAnalysis
     {
-        return $this->analyze($basePath);
+        return $this->analyze($basePath, $pendingAppJsx);
     }
 
     public function apply(string $basePath, ?ViteConfigAnalysis $analysis = null, bool $dryRun = false): bool
@@ -105,13 +118,21 @@ class ViteConfigMerger
 
         $path = $basePath.'/'.self::CONFIG_FILE;
         $contents = (string) file_get_contents($path);
-        $mergedInputs = array_values(array_unique([
-            ...$analysis->currentInputs,
-            ...$analysis->missingInputs,
-        ]));
-        $updated = $this->replaceInputDeclaration($contents, $mergedInputs);
+        $updated = $contents;
 
-        if ($updated === null || $updated === $contents) {
+        if ($analysis->missingInputs !== []) {
+            $mergedInputs = array_values(array_unique([
+                ...$analysis->currentInputs,
+                ...$analysis->missingInputs,
+            ]));
+            $updated = $this->replaceInputDeclaration($updated, $mergedInputs) ?? $updated;
+        }
+
+        if ($analysis->needsReactPlugin) {
+            $updated = $this->injectReactPlugin($updated);
+        }
+
+        if ($updated === $contents) {
             return false;
         }
 
@@ -123,9 +144,9 @@ class ViteConfigMerger
     /**
      * @return list<array{file: string, action: string, detail: string, analysis?: ViteConfigAnalysis}>
      */
-    public function plan(string $basePath): array
+    public function plan(string $basePath, bool $pendingAppJsx = false): array
     {
-        $analysis = $this->analyze($basePath);
+        $analysis = $this->analyze($basePath, $pendingAppJsx);
 
         if ($analysis->status === ViteConfigAnalysis::STATUS_MISSING) {
             return [[
@@ -164,11 +185,11 @@ class ViteConfigMerger
     /**
      * @return list<string>
      */
-    private function targetInputs(string $basePath): array
+    private function targetInputs(string $basePath, bool $pendingAppJsx): array
     {
         $inputs = ['resources/css/app.css'];
 
-        if (File::exists($basePath.'/resources/js/app.jsx')) {
+        if (File::exists($basePath.'/resources/js/app.jsx') || $pendingAppJsx) {
             $inputs[] = 'resources/js/app.jsx';
         } elseif (File::exists($basePath.'/resources/js/app.js')) {
             $inputs[] = 'resources/js/app.js';
@@ -177,6 +198,24 @@ class ViteConfigMerger
         }
 
         return $inputs;
+    }
+
+    /**
+     * @param  list<string>  $targetInputs
+     */
+    private function needsReactPlugin(string $contents, array $targetInputs): bool
+    {
+        if (str_contains($contents, '@vitejs/plugin-react')) {
+            return false;
+        }
+
+        foreach ($targetInputs as $input) {
+            if (str_ends_with($input, '.jsx')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -342,5 +381,38 @@ class ViteConfigMerger
         );
 
         return is_string($updated) ? $updated : null;
+    }
+
+    private function injectReactPlugin(string $contents): string
+    {
+        if (! str_contains($contents, "import react from '@vitejs/plugin-react'")) {
+            $contents = preg_replace(
+                '/((?:^import .+\n)+)/m',
+                "$1import react from '@vitejs/plugin-react';\n",
+                $contents,
+                1,
+            ) ?? $contents;
+        }
+
+        if (! str_contains($contents, 'react(),')) {
+            if (preg_match('/\n(\s+)tailwindcss\(\),/', $contents, $matches)) {
+                $indent = $matches[1];
+                $contents = preg_replace(
+                    '/\n'.preg_quote($indent, '/').'tailwindcss\(\),/',
+                    "\n{$indent}react(),\n{$indent}tailwindcss(),",
+                    $contents,
+                    1,
+                ) ?? $contents;
+            } else {
+                $contents = preg_replace(
+                    '/(\n        \}\),\n)(        \w)/',
+                    "$1        react(),\n$2",
+                    $contents,
+                    1,
+                ) ?? $contents;
+            }
+        }
+
+        return $contents;
     }
 }
