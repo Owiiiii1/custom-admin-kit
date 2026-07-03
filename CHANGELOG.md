@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## 0.2.2 — 2026-07-03
+
+### Fixed
+
+- Smoke output section grouping for frontend setup checks (`Core` vs `Frontend setup`)
+
 ## 0.2.0 — 2026-07-03
 
 ### Added

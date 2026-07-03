@@ -144,8 +144,46 @@ class SmokeTesterTest extends PackageTestCase
 
         $this->assertNotNull($frontendWarning);
         $this->assertTrue($frontendWarning->isWarning());
-        $this->assertSame('frontend-setup', $frontendWarning->section);
+        $this->assertSame(SmokeTester::SECTION_FRONTEND_SETUP, $frontendWarning->section);
         $this->assertStringContainsString('Frontend setup not detected', $frontendWarning->message);
+    }
+
+    public function test_core_checks_use_core_section(): void
+    {
+        $basePath = $this->tempBasePath();
+        $tester = new SmokeTester(new PublishMapResolver());
+        $results = $tester->run($basePath, null, 'core');
+
+        $coreChecks = collect($results)->filter(
+            static fn ($result) => $result->section === SmokeTester::SECTION_CORE,
+        );
+
+        $this->assertGreaterThanOrEqual(8, $coreChecks->count());
+
+        foreach ($coreChecks as $check) {
+            $this->assertSame(SmokeTester::SECTION_CORE, $check->section, $check->name);
+        }
+    }
+
+    public function test_completed_frontend_checks_use_frontend_setup_section(): void
+    {
+        $basePath = $this->tempBasePath();
+        $this->mockFrontendRoutesExist();
+        $this->seedCompletedFrontendSetup($basePath, withOwlAdminShare: true);
+
+        $tester = new SmokeTester(new PublishMapResolver());
+        $state = (new FrontendSetupState(FrontendSetupState::pathFor($basePath)))->read();
+        $results = $tester->checkFrontendSetup($basePath, $state);
+
+        $this->assertCount(10, $results);
+
+        foreach ($results as $check) {
+            $this->assertSame(
+                SmokeTester::SECTION_FRONTEND_SETUP,
+                $check->section,
+                'Check '.$check->name.' should be in Frontend setup section.',
+            );
+        }
     }
 
     public function test_check_frontend_setup_passes_when_state_and_routes_exist(): void
@@ -162,6 +200,7 @@ class SmokeTesterTest extends PackageTestCase
             $check = collect($results)->firstWhere('name', $name);
             $this->assertNotNull($check, "Missing check: {$name}");
             $this->assertTrue($check->passed, $name.': '.$check->message);
+            $this->assertSame(SmokeTester::SECTION_FRONTEND_SETUP, $check->section, $name);
         }
     }
 

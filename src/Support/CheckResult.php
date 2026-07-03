@@ -19,9 +19,9 @@ class CheckResult
         public readonly ?string $section = null,
     ) {}
 
-    public static function pass(string $name, string $message, ?string $section = null): self
+    public static function pass(string $name, string $message, ?string $hint = null, ?string $section = null): self
     {
-        return new self($name, true, $message, null, self::SEVERITY_PASS, $section);
+        return new self($name, true, $message, $hint, self::SEVERITY_PASS, $section);
     }
 
     public static function warn(string $name, string $message, ?string $hint = null, ?string $section = null): self

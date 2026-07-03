@@ -32,13 +32,14 @@ class SmokeCommand extends BaseKitCommand
         $frontendResults = [];
 
         foreach ($results as $result) {
-            if ($result->section === 'frontend-setup') {
+            if ($result->section === SmokeTester::SECTION_FRONTEND_SETUP) {
                 $frontendResults[] = $result;
             } else {
                 $coreResults[] = $result;
             }
         }
 
+        $this->info('Core:');
         $failures = $this->renderCheckResults($coreResults);
 
         $this->newLine();

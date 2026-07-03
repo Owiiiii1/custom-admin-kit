@@ -7,7 +7,9 @@ use Illuminate\Support\Facades\Route;
 
 class SmokeTester
 {
-    private const SECTION_FRONTEND_SETUP = 'frontend-setup';
+    public const SECTION_CORE = 'Core';
+
+    public const SECTION_FRONTEND_SETUP = 'Frontend setup';
 
     /** @var list<string> */
     private const FRONTEND_ROUTE_NAMES = [
@@ -33,6 +35,7 @@ class SmokeTester
                 'install-state',
                 'Install state not found.',
                 'Run owl-admin:install --preset=core (published files are verified from publish map, not state).',
+                self::SECTION_CORE,
             );
         } else {
             $installedVersion = (string) ($installState['version'] ?? '?');
@@ -40,7 +43,8 @@ class SmokeTester
 
             $results[] = CheckResult::pass(
                 'install-state',
-                'Install state present ('.PackageVersion::display($installedVersion).', preset: '.$statePreset.').'
+                'Install state present ('.PackageVersion::display($installedVersion).', preset: '.$statePreset.').',
+                section: self::SECTION_CORE,
             );
 
             $currentVersion = PackageVersion::current();
@@ -50,45 +54,47 @@ class SmokeTester
                     'install-state-version',
                     'Install state version '.PackageVersion::display($installedVersion).' differs from current package version '.PackageVersion::display($currentVersion).'.',
                     'Run owl-admin:install --preset=core --repair or reinstall if needed.',
+                    self::SECTION_CORE,
                 );
             }
         }
 
         $results[] = CheckResult::pass(
             'core-scope',
-            'Core preset does not install landing domain modules.'
+            'Core preset does not install landing domain modules.',
+            section: self::SECTION_CORE,
         );
 
         $reportPath = $basePath.'/'.config('owl-admin-kit.report_file');
         $results[] = File::exists($reportPath)
-            ? CheckResult::pass('install-report', 'Install report exists.')
-            : CheckResult::warn('install-report', 'Install report missing.');
+            ? CheckResult::pass('install-report', 'Install report exists.', section: self::SECTION_CORE)
+            : CheckResult::warn('install-report', 'Install report missing.', section: self::SECTION_CORE);
 
         $configPath = $basePath.'/'.config('owl-admin-kit.paths.config');
         $results[] = File::exists($configPath)
-            ? CheckResult::pass('config', 'config/owl-admin.php exists.')
-            : CheckResult::fail('config', 'config/owl-admin.php missing.');
+            ? CheckResult::pass('config', 'config/owl-admin.php exists.', section: self::SECTION_CORE)
+            : CheckResult::fail('config', 'config/owl-admin.php missing.', section: self::SECTION_CORE);
 
         $results[] = $this->checkPublishedFiles($basePath, $preset);
 
         try {
             $hasKitHealth = Route::has('owl-admin.health');
             $results[] = $hasKitHealth
-                ? CheckResult::pass('health-route', 'Kit health route owl-admin.health registered.')
-                : CheckResult::warn('health-route', 'routes/owl-admin-core.php not loaded yet.');
+                ? CheckResult::pass('health-route', 'Kit health route owl-admin.health registered.', section: self::SECTION_CORE)
+                : CheckResult::warn('health-route', 'routes/owl-admin-core.php not loaded yet.', section: self::SECTION_CORE);
         } catch (\Throwable) {
-            $results[] = CheckResult::warn('health-route', 'Could not inspect routes.');
+            $results[] = CheckResult::warn('health-route', 'Could not inspect routes.', section: self::SECTION_CORE);
         }
 
         $uiPath = config('owl-admin-kit.ui.canonical_path', 'resources/js/Components/ui');
         $results[] = File::isDirectory($basePath.'/'.$uiPath)
-            ? CheckResult::pass('ui-path', "Canonical UI path exists: {$uiPath}.")
-            : CheckResult::fail('ui-path', "Missing canonical UI path: {$uiPath}.");
+            ? CheckResult::pass('ui-path', "Canonical UI path exists: {$uiPath}.", section: self::SECTION_CORE)
+            : CheckResult::fail('ui-path', "Missing canonical UI path: {$uiPath}.", section: self::SECTION_CORE);
 
         $legacyLower = $basePath.'/resources/js/components/ui';
         $results[] = File::isDirectory($legacyLower)
-            ? CheckResult::warn('ui-duplicate', 'Legacy path resources/js/components/ui still exists — remove to avoid duplicates.')
-            : CheckResult::pass('ui-duplicate', 'No lowercase components/ui directory.');
+            ? CheckResult::warn('ui-duplicate', 'Legacy path resources/js/components/ui still exists — remove to avoid duplicates.', section: self::SECTION_CORE)
+            : CheckResult::pass('ui-duplicate', 'No lowercase components/ui directory.', section: self::SECTION_CORE);
 
         $frontendState = (new FrontendSetupState(FrontendSetupState::pathFor($basePath)))->read();
         $frontendSetupCompleted = is_array($frontendState) && ($frontendState['completed'] ?? false) === true;
@@ -99,8 +105,8 @@ class SmokeTester
 
         $expected = count($this->publishMap->copyEntriesForPreset($preset));
         $results[] = $expected > 0
-            ? CheckResult::pass('publish-map', "Core publish map defines {$expected} copy target(s).")
-            : CheckResult::fail('publish-map', 'Core publish map defines 0 copy target(s).');
+            ? CheckResult::pass('publish-map', "Core publish map defines {$expected} copy target(s).", section: self::SECTION_CORE)
+            : CheckResult::fail('publish-map', 'Core publish map defines 0 copy target(s).', section: self::SECTION_CORE);
 
         $results = array_merge($results, $this->checkFrontendSetup($basePath, $frontendState));
 
@@ -142,7 +148,7 @@ class SmokeTester
         }
 
         $results = [
-            CheckResult::pass('frontend-state', 'completed', null, $section),
+            CheckResult::pass('frontend-state', 'completed', section: $section),
         ];
 
         foreach (self::FRONTEND_ROUTE_NAMES as $routeName) {
@@ -175,7 +181,7 @@ class SmokeTester
     {
         try {
             if (Route::has($routeName)) {
-                return CheckResult::pass('route:'.$routeName, 'registered.', null, $section);
+                return CheckResult::pass('route:'.$routeName, 'registered.', section: $section);
             }
         } catch (\Throwable) {
             return CheckResult::fail(
@@ -202,8 +208,8 @@ class SmokeTester
         string $section,
     ): CheckResult {
         return File::exists($absolutePath)
-            ? CheckResult::pass($name, $passMessage, null, $section)
-            : CheckResult::fail($name, $failMessage, null, $section);
+            ? CheckResult::pass($name, $passMessage, section: $section)
+            : CheckResult::fail($name, $failMessage, section: $section);
     }
 
     private function checkWebRoutesInclude(string $basePath, string $section): CheckResult
@@ -225,8 +231,7 @@ class SmokeTester
             return CheckResult::pass(
                 'web-routes-include',
                 'routes/web.php includes owl-admin-pages.php.',
-                null,
-                $section,
+                section: $section,
             );
         }
 
@@ -257,8 +262,7 @@ class SmokeTester
             return CheckResult::pass(
                 'inertia-share',
                 'owlAdmin shared.',
-                null,
-                $section,
+                section: $section,
             );
         }
 
@@ -276,7 +280,7 @@ class SmokeTester
         $absolutePath = $basePath.'/'.ltrim($manifestPath, '/');
 
         if (File::exists($absolutePath)) {
-            return CheckResult::pass('vite-manifest', "{$manifestPath} exists.", null, $section);
+            return CheckResult::pass('vite-manifest', "{$manifestPath} exists.", section: $section);
         }
 
         return CheckResult::fail(
@@ -297,6 +301,7 @@ class SmokeTester
                 'published-files',
                 '0/0 core file(s) on disk.',
                 'Publish map is empty or failed to load for preset: '.$preset,
+                self::SECTION_CORE,
             );
         }
 
@@ -317,12 +322,14 @@ class SmokeTester
                 'published-files',
                 "{$existingCount}/{$totalCount} core file(s) on disk.",
                 $hint,
+                self::SECTION_CORE,
             );
         }
 
         return CheckResult::pass(
             'published-files',
             "{$existingCount}/{$totalCount} core file(s) on disk.",
+            section: self::SECTION_CORE,
         );
     }
 
@@ -332,13 +339,14 @@ class SmokeTester
         $absolutePath = $basePath.'/'.ltrim($manifestPath, '/');
 
         if (File::exists($absolutePath)) {
-            return CheckResult::pass('vite-manifest', "{$manifestPath} exists.");
+            return CheckResult::pass('vite-manifest', "{$manifestPath} exists.", section: self::SECTION_CORE);
         }
 
         return CheckResult::warn(
             'vite-manifest',
             'Frontend build not found.',
             'Run npm run build.',
+            self::SECTION_CORE,
         );
     }
 
