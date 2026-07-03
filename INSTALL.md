@@ -139,7 +139,7 @@ Not published by core preset:
 | `package.json` | Safe merge via `owl-admin:frontend-setup` (adds missing deps only) |
 | `routes/web.php` | Dashboard and domain routes — use `docs/merge-snippets/core-routes.php` |
 | `app/Models/User.php` | Host user model |
-| `HandleInertiaRequests` | Share `owlAdmin.brand_name` from `config('owl-admin.brand_name')` |
+| `HandleInertiaRequests` | Share `owlAdmin` props via `owl-admin:frontend-setup` or `docs/merge-snippets/HandleInertiaRequests.php` |
 
 Core routes example (`AdminRouteMiddleware::stack()` — no `verified` by default):
 
@@ -279,4 +279,40 @@ If auto-merge would change `vite.config.js`:
 
 ```text
 vite.config.js changes require --backup or --force.
+```
+
+### Safe `HandleInertiaRequests` merge
+
+`AdminLayout.jsx` reads `usePage().props.owlAdmin.brand_name` and `logo_path`. The host middleware must share `owlAdmin`.
+
+| Host middleware | Behavior |
+|-----------------|----------|
+| **missing** | WARN (FAIL with `--strict`); install hint: `composer require inertiajs/inertia-laravel && php artisan inertia:middleware` |
+| **exists** + `owlAdmin` already shared | OK — no changes |
+| **standard** `share(Request $request): array` with `array_merge(parent::share($request), [` | Auto-merge `owlAdmin` with `--backup` / `--force` |
+| **non-standard** share method | Manual merge from `docs/merge-snippets/HandleInertiaRequests.php` |
+
+Auto-merge adds:
+
+```php
+'owlAdmin' => fn () => config('owl-admin.branding', [
+    'brand_name' => config('owl-admin.brand_name', config('owl-admin.name', 'Service Admin')),
+    'logo_path' => config('owl-admin.logo_path', '/images/company-logo.svg'),
+]),
+```
+
+Dry-run output:
+
+```text
+HandleInertiaRequests:
+  status: exists
+  owlAdmin share: no
+  action: auto-merge
+  will write: no (dry-run)
+```
+
+If auto-merge would change the middleware:
+
+```text
+HandleInertiaRequests changes require --backup or --force.
 ```

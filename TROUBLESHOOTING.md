@@ -75,6 +75,53 @@ If auto-merge is available but you omit `--backup` / `--force`:
 vite.config.js changes require --backup or --force.
 ```
 
+### HandleInertiaRequests missing or non-standard
+
+`AdminLayout.jsx` expects shared Inertia props:
+
+```js
+usePage().props.owlAdmin.brand_name
+usePage().props.owlAdmin.logo_path
+```
+
+If middleware is missing:
+
+```bash
+composer require inertiajs/inertia-laravel
+php artisan inertia:middleware
+```
+
+Then re-run:
+
+```bash
+php artisan owl-admin:frontend-setup --preset=core --dry-run
+php artisan owl-admin:frontend-setup --preset=core --backup
+```
+
+With `--strict`, missing middleware fails instead of warning.
+
+If `share()` is non-standard, merge manually from:
+
+```text
+docs/merge-snippets/HandleInertiaRequests.php
+```
+
+Example dry-run output:
+
+```text
+HandleInertiaRequests:
+  status: exists
+  owlAdmin share: no
+  action: auto-merge
+  will write: no
+```
+
+Without `--backup` / `--force`:
+
+```text
+HandleInertiaRequests changes require --backup or --force.
+```
+
 Fix manually:
 
 ```bash

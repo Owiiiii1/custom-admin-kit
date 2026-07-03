@@ -20,6 +20,7 @@ class FrontendSetupResult
         public readonly ?PackageJsonMergePlan $packageJsonMerge = null,
         public readonly ?ViteConfigAnalysis $viteConfigAnalysis = null,
         public readonly ?InertiaAppAnalysis $inertiaAppAnalysis = null,
+        public readonly ?InertiaMiddlewareAnalysis $inertiaMiddlewareAnalysis = null,
     ) {}
 
     public function hasBlockingFailures(): bool

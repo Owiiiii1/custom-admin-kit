@@ -38,12 +38,15 @@ class FrontendSetupPlanner
         $inertiaAppSteps = $this->inertiaAppMerger->plan($basePath);
         $inertiaAppAnalysis = $inertiaAppSteps[0]['analysis'] ?? null;
 
+        $inertiaMiddlewareSteps = $this->inertiaMiddlewareMerger->plan($basePath);
+        $inertiaMiddlewareAnalysis = $inertiaMiddlewareSteps[0]['analysis'] ?? null;
+
         $planSteps = array_merge(
             $packageJsonSteps,
             $viteConfigSteps,
             $inertiaAppSteps,
             $this->planAppCss($basePath),
-            $this->inertiaMiddlewareMerger->plan($basePath),
+            $inertiaMiddlewareSteps,
         );
 
         $missingNpm = $packageJsonMerge instanceof PackageJsonMergePlan
@@ -71,6 +74,7 @@ class FrontendSetupPlanner
             packageJsonMerge: $packageJsonMerge instanceof PackageJsonMergePlan ? $packageJsonMerge : null,
             viteConfigAnalysis: $viteConfigAnalysis instanceof ViteConfigAnalysis ? $viteConfigAnalysis : null,
             inertiaAppAnalysis: $inertiaAppAnalysis instanceof InertiaAppAnalysis ? $inertiaAppAnalysis : null,
+            inertiaMiddlewareAnalysis: $inertiaMiddlewareAnalysis instanceof InertiaMiddlewareAnalysis ? $inertiaMiddlewareAnalysis : null,
         );
     }
 
@@ -148,14 +152,36 @@ class FrontendSetupPlanner
             );
         }
 
-        $middleware = 'app/Http/Middleware/HandleInertiaRequests.php';
-        $results[] = File::exists($basePath.'/'.$middleware)
-            ? CheckResult::pass('file:handle-inertia', "{$middleware} exists.")
-            : CheckResult::fail(
+        $middlewareAnalysis = $this->inertiaMiddlewareMerger->analyze($basePath);
+
+        if ($middlewareAnalysis->status === InertiaMiddlewareAnalysis::STATUS_MISSING) {
+            $results[] = CheckResult::warn(
                 'file:handle-inertia',
-                'Missing HandleInertiaRequests middleware.',
-                'composer require inertiajs/inertia-laravel and publish middleware.',
+                'HandleInertiaRequests middleware is missing.',
+                $middlewareAnalysis->installHint ?? 'composer require inertiajs/inertia-laravel && php artisan inertia:middleware',
             );
+        } elseif ($middlewareAnalysis->action === InertiaMiddlewareAnalysis::ACTION_OK) {
+            $results[] = CheckResult::pass(
+                'file:handle-inertia',
+                'HandleInertiaRequests already shares owlAdmin props.',
+            );
+        } elseif ($middlewareAnalysis->canAutoMerge()) {
+            $results[] = CheckResult::pass(
+                'file:handle-inertia',
+                'HandleInertiaRequests can receive owlAdmin shared props via auto-merge.',
+            );
+        } elseif ($middlewareAnalysis->requiresManualMerge()) {
+            $results[] = CheckResult::warn(
+                'file:handle-inertia',
+                'Non-standard HandleInertiaRequests middleware detected.',
+                'Merge manually using docs/merge-snippets/HandleInertiaRequests.php',
+            );
+        } else {
+            $results[] = CheckResult::pass(
+                'file:handle-inertia',
+                'HandleInertiaRequests middleware exists.',
+            );
+        }
 
         foreach ($this->dependencies->check($basePath, strict: false) as $dependencyResult) {
             $results[] = $dependencyResult;

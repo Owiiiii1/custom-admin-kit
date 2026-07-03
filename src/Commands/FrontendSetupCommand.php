@@ -8,6 +8,7 @@ use OwlSolutions\CustomAdminKit\Support\FrontendSetupPlanner;
 use OwlSolutions\CustomAdminKit\Support\FrontendSetupResult;
 use OwlSolutions\CustomAdminKit\Support\InertiaAppAnalysis;
 use OwlSolutions\CustomAdminKit\Support\InertiaAppMerger;
+use OwlSolutions\CustomAdminKit\Support\InertiaMiddlewareAnalysis;
 use OwlSolutions\CustomAdminKit\Support\InertiaMiddlewareMerger;
 use OwlSolutions\CustomAdminKit\Support\PackageJsonMergePlan;
 use OwlSolutions\CustomAdminKit\Support\PackageJsonMerger;
@@ -71,6 +72,7 @@ class FrontendSetupCommand extends BaseKitCommand
         $this->renderPackageJsonMerge($result->packageJsonMerge, $dryRun, $backup, $force);
         $this->renderViteConfigMerge($result->viteConfigAnalysis, $dryRun, $backup, $force);
         $this->renderAppJsxMerge($result->inertiaAppAnalysis, $dryRun, $backup, $force);
+        $this->renderHandleInertiaRequestsMerge($result->inertiaMiddlewareAnalysis, $dryRun, $backup, $force);
 
         if ($dryRun) {
             $this->info('Dry run complete — no files were modified.');
@@ -96,8 +98,20 @@ class FrontendSetupCommand extends BaseKitCommand
             return self::FAILURE;
         }
 
+        if ($this->handleInertiaRequestsRequiresProtection($result) && ! $backup && ! $force) {
+            $this->error('HandleInertiaRequests changes require --backup or --force.');
+
+            return self::FAILURE;
+        }
+
         if ($strict && $result->viteConfigAnalysis instanceof ViteConfigAnalysis && $result->viteConfigAnalysis->failsStrictCheck()) {
             $this->error('vite.config.js is missing the Inertia app entry and cannot be auto-merged. Use the manual snippet or fix inputs manually.');
+
+            return self::FAILURE;
+        }
+
+        if ($strict && $result->inertiaMiddlewareAnalysis instanceof InertiaMiddlewareAnalysis && $result->inertiaMiddlewareAnalysis->failsStrictCheck()) {
+            $this->error('HandleInertiaRequests middleware is missing. Install inertiajs/inertia-laravel and run php artisan inertia:middleware.');
 
             return self::FAILURE;
         }
@@ -157,8 +171,13 @@ class FrontendSetupCommand extends BaseKitCommand
             $this->line('  <fg=green>→</> resources/js/app.jsx created.');
         }
 
-        if ($this->shouldApply($result, 'app/Http/Middleware/HandleInertiaRequests.php')) {
-            $inertiaMiddlewareMerger->apply($basePath);
+        if ($this->shouldApply($result, 'app/Http/Middleware/HandleInertiaRequests.php') && $result->inertiaMiddlewareAnalysis instanceof InertiaMiddlewareAnalysis) {
+            if (! $inertiaMiddlewareMerger->apply($basePath, $result->inertiaMiddlewareAnalysis)) {
+                $this->error('HandleInertiaRequests merge failed.');
+
+                return self::FAILURE;
+            }
+
             $this->line('  <fg=green>→</> HandleInertiaRequests updated.');
         }
 
@@ -214,7 +233,7 @@ class FrontendSetupCommand extends BaseKitCommand
         $this->info('Frontend merge plan:');
 
         foreach ($result->planSteps as $step) {
-            if (in_array($step['file'], ['package.json', 'vite.config.js', 'resources/js/app.jsx'], true)) {
+            if (in_array($step['file'], ['package.json', 'vite.config.js', 'resources/js/app.jsx', 'app/Http/Middleware/HandleInertiaRequests.php'], true)) {
                 continue;
             }
 
@@ -356,6 +375,50 @@ class FrontendSetupCommand extends BaseKitCommand
         $this->newLine();
     }
 
+    private function renderHandleInertiaRequestsMerge(
+        ?InertiaMiddlewareAnalysis $analysis,
+        bool $dryRun,
+        bool $backup,
+        bool $force,
+    ): void {
+        $this->info('HandleInertiaRequests:');
+
+        if (! $analysis instanceof InertiaMiddlewareAnalysis) {
+            $this->line('  <fg=gray>→</> unavailable');
+
+            return;
+        }
+
+        $this->line('  <fg=gray>→</> status: '.$analysis->status);
+        $this->line('  <fg=gray>→</> owlAdmin share: '.($analysis->hasOwlAdminShare ? 'yes' : 'no'));
+        $this->line('  <fg=gray>→</> action: '.$analysis->action);
+
+        if ($analysis->status === InertiaMiddlewareAnalysis::STATUS_MISSING && $analysis->installHint !== null) {
+            $this->line('  <fg=yellow>→</> install hint: '.$analysis->installHint);
+        }
+
+        if ($analysis->requiresManualMerge()) {
+            $this->line('  <fg=yellow>→</> manual snippet: docs/merge-snippets/HandleInertiaRequests.php');
+        }
+
+        if ($analysis->canAutoMerge()) {
+            $willWrite = ! $dryRun && ($backup || $force);
+            $this->line('  <fg=gray>→</> will write: '.($dryRun ? 'no (dry-run)' : ($willWrite ? 'yes' : 'no')));
+
+            if (! $dryRun && ! $backup && ! $force) {
+                $this->line('  <fg=red>→</> HandleInertiaRequests changes require --backup or --force.');
+            }
+        } elseif ($analysis->action === InertiaMiddlewareAnalysis::ACTION_OK) {
+            $this->line('  <fg=gray>→</> will write: no');
+        } elseif ($analysis->status === InertiaMiddlewareAnalysis::STATUS_MISSING) {
+            $this->line('  <fg=gray>→</> will write: no (middleware missing)');
+        } else {
+            $this->line('  <fg=gray>→</> will write: no (manual merge required)');
+        }
+
+        $this->newLine();
+    }
+
     private function relativeManualSnippetPath(): string
     {
         return 'docs/merge-snippets/vite.config.js';
@@ -377,6 +440,12 @@ class FrontendSetupCommand extends BaseKitCommand
     {
         return $result->inertiaAppAnalysis instanceof InertiaAppAnalysis
             && $result->inertiaAppAnalysis->canAutoCreate();
+    }
+
+    private function handleInertiaRequestsRequiresProtection(FrontendSetupResult $result): bool
+    {
+        return $result->inertiaMiddlewareAnalysis instanceof InertiaMiddlewareAnalysis
+            && $result->inertiaMiddlewareAnalysis->canAutoMerge();
     }
 
     /**

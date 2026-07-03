@@ -8,6 +8,11 @@ return [
 
     'logo_path' => env('OWL_ADMIN_LOGO', '/images/company-logo.svg'),
 
+    'branding' => [
+        'brand_name' => env('OWL_ADMIN_BRAND', 'Service Admin'),
+        'logo_path' => env('OWL_ADMIN_LOGO', '/images/company-logo.svg'),
+    ],
+
     'route_prefix' => env('OWL_ADMIN_ROUTE_PREFIX', ''),
 
     'login_path' => env('OWL_ADMIN_LOGIN_PATH', 'admin'),
