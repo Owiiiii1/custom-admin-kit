@@ -1,6 +1,5 @@
 {
     "name": "owlsolutions/custom-admin-kit",
-    "version": "0.1.0",
     "description": "Installable custom admin UI kit for Laravel applications (Inertia/React admin shell, auth, and tooling).",
     "type": "library",
     "license": "MIT",

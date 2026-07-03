@@ -15,6 +15,7 @@ jobs:
         with:
           php-version: '8.3'
           tools: composer:v2
+      - run: rm -f composer.lock
       - run: composer validate --strict
       - run: composer install --no-interaction
       - run: vendor/bin/phpunit
