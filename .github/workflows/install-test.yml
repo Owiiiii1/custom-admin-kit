@@ -1,0 +1,49 @@
+name: Install test
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+      - run: composer validate --strict
+      - run: composer install --no-interaction
+      - run: vendor/bin/phpunit
+
+  integration:
+    runs-on: ubuntu-latest
+    needs: package
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: custom-admin-kit
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+      - run: composer create-project laravel/laravel test-app --no-interaction
+      - working-directory: test-app
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          composer config repositories.custom-admin-kit path ../custom-admin-kit
+          composer require owlsolutions/custom-admin-kit:@dev --no-interaction
+      - working-directory: test-app
+        run: php artisan owl-admin:doctor --preset=core
+      - working-directory: test-app
+        run: php artisan owl-admin:install --preset=core --dry-run
+      - working-directory: test-app
+        run: php artisan owl-admin:install --preset=core --install-frontend-deps --backup --force --no-smoke
+      - working-directory: test-app
+        run: php artisan owl-admin:smoke --preset=core
+      - working-directory: test-app
+        run: php artisan owl-admin:install --preset=full; test $? -eq 1

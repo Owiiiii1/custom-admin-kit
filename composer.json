@@ -1,0 +1,57 @@
+{
+    "name": "owlsolutions/custom-admin-kit",
+    "version": "0.1.0",
+    "description": "Installable custom admin UI kit for Laravel applications (Inertia/React admin shell, auth, and tooling).",
+    "type": "library",
+    "license": "MIT",
+    "keywords": [
+        "laravel",
+        "admin",
+        "inertia",
+        "react",
+        "owlsolutions"
+    ],
+    "authors": [
+        {
+            "name": "OwlSolutions",
+            "homepage": "https://github.com/Owiiiii1/custom-admin-kit"
+        }
+    ],
+    "require": {
+        "php": "^8.3",
+        "illuminate/console": "^13.0",
+        "illuminate/filesystem": "^13.0",
+        "illuminate/support": "^13.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^11.0",
+        "phpunit/phpunit": "^12.0"
+    },
+    "suggest": {
+        "inertiajs/inertia-laravel": "Required on host app for Inertia admin transport (^2.0)",
+        "tightenco/ziggy": "Required on host app for JS route helpers (^2.0)",
+        "laravel/sanctum": "Optional API auth for /api/user route (^4.0)"
+    },
+    "autoload": {
+        "psr-4": {
+            "OwlSolutions\\CustomAdminKit\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "OwlSolutions\\CustomAdminKit\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "OwlSolutions\\CustomAdminKit\\CustomAdminKitServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "config": {
+        "sort-packages": true
+    }
+}

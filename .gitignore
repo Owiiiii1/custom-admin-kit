@@ -1,0 +1,40 @@
+/vendor/
+/node_modules/
+
+# Local / generated
+/.phpunit.cache/
+/.phpunit.result.cache
+.phpunit.cache
+.php-cs-fixer.cache
+composer.lock
+
+# Environment & secrets
+.env
+.env.*
+auth.json
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Laravel host paths (if package ever run from app root)
+/storage/
+/bootstrap/cache/
+
+# Package backups & install artifacts
+/.backup-before-audit-sync/
+*.owl-admin-backup*
+**/*.owl-admin-backup*
+
+# Integration / temp test apps (never commit)
+/owl-admin-test/
+/test-app/
+/test-owl-admin/
