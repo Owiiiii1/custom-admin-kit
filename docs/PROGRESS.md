@@ -1,5 +1,13 @@
 # Progress Log
 
+## 2026-07-04 — v0.3.1 compatibility patch
+
+- Restored backward compatibility for `WebRoutesMerger::apply()` old/new signatures
+- Added compatibility shim for legacy `WebRoutesAnalysis::$hasInclude`
+- Restored frontend setup output compatibility (`web.php include:`)
+- Restored `core` preset published-files compatibility (`23/23`)
+- Marked `v0.3.1` as recommended install version instead of `v0.3.0`
+
 ## 2026-07-04 — v0.3.0 admin preset implementation
 
 - Added new preset `admin` while keeping `core` intact

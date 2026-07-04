@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+## 0.3.1 — 2026-07-04
+
+### Fixed
+
+- Compatibility release after `0.3.0` CI failures: restored backward compatibility for `WebRoutesMerger::apply()` old/new call styles.
+- Restored compatibility for legacy `WebRoutesAnalysis::$hasInclude` access while keeping new pages/auth include fields.
+- Restored frontend setup output compatibility (`web.php include:` line) expected by existing test suite.
+- Restored `core` preset published-files compatibility to `23/23` (admin/auth/AI files remain admin-only).
+
+### Recommended
+
+- Use `0.3.1` as the recommended install version.
+- Do not use `0.3.0` for new installs.
+
 ## 0.3.0 — 2026-07-04
 
 ### Added

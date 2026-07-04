@@ -2,7 +2,7 @@
 
 Installable Laravel package for a generic Inertia + React admin shell.
 
-**Version:** 0.3.0 — `core` preset and `admin` preset (core + auth/admin shell + AI Settings)
+**Version:** 0.3.1 — `core` preset and `admin` preset (core + auth/admin shell + AI Settings)
 
 ## Requirements
 
@@ -37,11 +37,11 @@ php artisan owl-admin:uninstall [--keep-files]
 
 Full file map: [docs/PACKAGE_FILE_MAP.md](./docs/PACKAGE_FILE_MAP.md)
 
-## Recommended install flow (v0.3.0)
+## Recommended install flow (v0.3.1)
 
 ```bash
 composer config repositories.custom-admin-kit vcs git@github.com:Owiiiii1/custom-admin-kit.git
-composer require owlsolutions/custom-admin-kit:v0.3.0
+composer require owlsolutions/custom-admin-kit:v0.3.1
 
 composer require inertiajs/inertia-laravel tightenco/ziggy
 php artisan inertia:middleware
@@ -60,6 +60,9 @@ php artisan owl-admin:smoke --preset=admin
 | **0.1.x** | Core stubs only (`owl-admin:install`) — manual frontend/route merge |
 | **0.2.0** | Core stubs + safe `owl-admin:frontend-setup` for npm, Vite, Inertia, middleware, routes |
 | **0.3.0** | New `admin` preset (core + auth/login/logout + profile + users in settings + AI Settings) |
+| **0.3.1** | Patch compatibility fix after `0.3.0`: test/backward-compat restoration, core preset remains `23/23` |
+
+Recommended for new installs: **`0.3.1`**.
 
 ## AI Settings
 

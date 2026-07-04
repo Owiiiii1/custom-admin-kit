@@ -7,8 +7,9 @@
 | **v0.1.1** | **Core stubs only** — `owl-admin:install` publishes 23 files (config, health route, JSX/CSS/UI). Host must merge `package.json`, Vite, Inertia entry, routes, and middleware manually. |
 | **v0.2.0** | **Core stubs + frontend setup** — everything in v0.1.x plus `owl-admin:frontend-setup` for safe merges of host frontend files and core admin routes. |
 | **v0.3.0** | **Admin preset available** — `preset=admin` installs core + login/logout/profile/settings-users + AI Settings pages and generic controllers/services. |
+| **v0.3.1** | **Recommended patch release** — keeps `v0.3.0` functionality, fixes package test compatibility, preserves `core` published-files `23/23`. |
 
-Recommended flow for new projects: install core stubs, then run frontend setup with `--backup`.
+Recommended flow for new projects: use **`v0.3.1`**, then install core stubs and run frontend setup with `--backup`.
 
 ---
 
@@ -16,7 +17,7 @@ Recommended flow for new projects: install core stubs, then run frontend setup w
 
 ```bash
 composer config repositories.custom-admin-kit vcs git@github.com:Owiiiii1/custom-admin-kit.git
-composer require owlsolutions/custom-admin-kit:v0.3.0
+composer require owlsolutions/custom-admin-kit:v0.3.1
 ```
 
 Or from Packagist / path repository:
