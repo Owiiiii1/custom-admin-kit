@@ -165,11 +165,17 @@ class WebRoutesMerger
 
     public function apply(
         string $basePath,
-        string $preset = 'core',
+        string|WebRoutesAnalysis $preset = 'core',
         ?WebRoutesAnalysis $analysis = null,
         bool $dryRun = false
     ): bool
     {
+        if ($preset instanceof WebRoutesAnalysis) {
+            // Backward compatibility: apply($basePath, WebRoutesAnalysis $analysis, ...)
+            $analysis = $preset;
+            $preset = 'core';
+        }
+
         $analysis ??= $this->analyze($basePath, $preset);
 
         if (! $analysis->hasChanges()) {

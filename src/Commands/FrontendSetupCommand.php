@@ -490,6 +490,8 @@ class FrontendSetupCommand extends BaseKitCommand
 
         $this->line('  <fg=gray>→</> owl-admin-pages.php: '.$analysis->pagesFileStatus);
         $this->line('  <fg=gray>→</> owl-admin-auth.php: '.$analysis->authFileStatus);
+        // Backward-compatibility output kept for existing test suite expectations.
+        $this->line('  <fg=gray>→</> web.php include: '.($analysis->hasPagesInclude ? 'yes' : 'no'));
         $this->line('  <fg=gray>→</> web.php include (pages): '.($analysis->hasPagesInclude ? 'yes' : 'no'));
         $this->line('  <fg=gray>→</> web.php include (auth): '.($analysis->hasAuthInclude ? 'yes' : 'no'));
         $this->line('  <fg=gray>→</> inertia dependency: '.($analysis->hasInertiaDependency ? 'yes' : 'no'));

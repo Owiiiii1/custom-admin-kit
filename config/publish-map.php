@@ -58,15 +58,6 @@ foreach (['core', 'admin'] as $preset) {
     );
     $add(
         $map,
-        'resources/views/app.blade.php',
-        'resources/views/app.blade.php',
-        'resources/views/app.blade.php',
-        $preset,
-        'medium',
-        'Inertia root Blade view.',
-    );
-    $add(
-        $map,
         'resources/js/lib/utils.js',
         'resources/js/lib/utils.js',
         'resources/js/lib/utils.js',
@@ -110,16 +101,6 @@ foreach (['core', 'admin'] as $preset) {
         'low',
         'Replace via config owl-admin.logo_path.',
     );
-    $add(
-        $map,
-        'public/images/auth-abstract-bg.svg',
-        'public/images/auth-abstract-bg.svg',
-        'public/images/auth-abstract-bg.svg',
-        $preset,
-        'low',
-        'Auth page branding asset.',
-    );
-
     foreach ($uiComponents as $file) {
         $add(
             $map,
@@ -163,6 +144,24 @@ $add(
 );
 
 // Admin preset extends core with full generic auth/admin shell.
+$add(
+    $map,
+    'resources/views/app.blade.php',
+    'resources/views/app.blade.php',
+    'resources/views/app.blade.php',
+    'admin',
+    'medium',
+    'Inertia root Blade view.',
+);
+$add(
+    $map,
+    'public/images/auth-abstract-bg.svg',
+    'public/images/auth-abstract-bg.svg',
+    'public/images/auth-abstract-bg.svg',
+    'admin',
+    'low',
+    'Auth page branding asset.',
+);
 $add(
     $map,
     'routes/owl-admin-pages.php',

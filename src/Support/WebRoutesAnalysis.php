@@ -60,4 +60,19 @@ class WebRoutesAnalysis
     {
         return ! $this->hasInertiaDependency && $this->hasChanges();
     }
+
+    /**
+     * Backward-compatibility shim for legacy tests/code that still read
+     * $analysis->hasInclude instead of $analysis->hasPagesInclude.
+     */
+    public function __get(string $name): mixed
+    {
+        if ($name === 'hasInclude') {
+            return $this->hasPagesInclude;
+        }
+
+        trigger_error('Undefined property: '.self::class.'::$'.$name, E_USER_WARNING);
+
+        return null;
+    }
 }
