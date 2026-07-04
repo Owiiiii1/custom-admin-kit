@@ -1,0 +1,26 @@
+# Progress Log
+
+## 2026-07-04 — v0.3.0 admin preset implementation
+
+- Added new preset `admin` while keeping `core` intact
+- Added generic auth shell (`/login`, `/logout`) with custom login page
+- Added generic profile page/controller/routes
+- Added generic users management in settings page/controller/routes
+- Extended publish map with admin-only stubs (controllers/requests/routes/pages/layouts)
+- Extended frontend setup route merge to support both `owl-admin-pages.php` and `owl-admin-auth.php`
+- Extended smoke checks for admin preset (auth/profile/users table/dashboard middleware)
+- Updated make-admin behavior: explicit CLI credentials are accepted (warning for weak values)
+- Updated docs and changelog for v0.3.0 scope
+- Added AI Settings module in v0.3.0 (OpenAI, Anthropic, Gemini; one active provider/model)
+- Added AI provider service layer stubs (Laravel HTTP client, no SDKs)
+- Added encrypted `ai_provider_settings` migration/model stubs
+- Added AI status badge in `AdminLayout` via shared Inertia props (`owlAdmin.ai`)
+
+## Planned v0.4.0 (TODO)
+
+- Customers
+- Staff/Employees
+- Services
+- Orders/Jobs
+- Statuses
+- Calendar

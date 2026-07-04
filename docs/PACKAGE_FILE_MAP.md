@@ -1,8 +1,11 @@
-# Package File Map — v0.1 core-only
+# Package File Map — v0.3 (`core` + `admin`)
 
-Package: `owlsolutions/custom-admin-kit` **0.1.0**
+Package: `owlsolutions/custom-admin-kit` **0.3.0**
 
-Only **`--preset=core`** is available. `full`, `auth`, and `frontend` are blocked.
+Available presets:
+
+- `core` — lightweight skeleton
+- `admin` — core + auth/profile/users/settings + AI settings shell
 
 **Canonical UI path:** `resources/js/Components/ui` (import: `@/Components/ui`)
 
@@ -12,11 +15,25 @@ Only **`--preset=core`** is available. `full`, `auth`, and `frontend` are blocke
 | `routes/owl-admin-core.php` | `routes/owl-admin-core.php` | copy | GET `/owl-admin/health` |
 | `resources/css/owl-admin.css` | `resources/css/owl-admin.css` | copy | Merge into host CSS |
 | `resources/js/lib/utils.js` | `resources/js/lib/utils.js` | copy | cn() helper |
-| `resources/js/Layouts/AdminLayout.jsx` | same | copy | Core shell, no domain nav |
+| `resources/js/Layouts/AdminLayout.jsx` | same | copy | Core shell (core preset) / full generic shell (admin preset override) |
 | `resources/js/Pages/Dashboard.jsx` | same | copy | Placeholder |
 | `resources/js/Pages/AppSettings/Index.jsx` | same | copy | Placeholder |
 | `resources/js/Pages/Statistics/Logs.jsx` | same | copy | Placeholder |
-| `resources/js/Pages/Settings/Index.jsx` | same | copy | Placeholder (no user CRUD) |
+| `resources/js/Pages/Settings/Index.jsx` | same | copy | Placeholder in core, users management in admin preset override |
+| `routes/owl-admin-auth.php` | `routes/owl-admin-auth.php` | copy | Admin preset: login/logout routes |
+| `app/Http/Controllers/Auth/AuthenticatedSessionController.php` | same | copy | Admin preset auth controller |
+| `app/Http/Requests/Auth/LoginRequest.php` | same | copy | Admin preset login request |
+| `app/Http/Controllers/ProfileController.php` | same | copy | Admin preset profile controller |
+| `app/Http/Controllers/Settings/SettingsController.php` | same | copy | Admin preset settings controller |
+| `app/Http/Controllers/Settings/UserController.php` | same | copy | Admin preset users CRUD controller |
+| `app/Http/Controllers/Settings/AiSettingsController.php` | same | copy | Admin preset AI settings controller |
+| `app/Models/AiProviderSetting.php` | same | copy | Admin preset AI provider model |
+| `app/Services/Ai/*` | same | copy | Admin preset AI provider service layer |
+| `database/migrations/*create_ai_provider_settings_table*.php` | same | copy | Admin preset AI settings migration |
+| `resources/js/Layouts/AuthLayout.jsx` | same | copy | Admin preset auth wrapper |
+| `resources/js/Pages/Auth/Login.jsx` | same | copy | Admin preset login page |
+| `resources/js/Pages/Profile/Edit.jsx` | same | copy | Admin preset profile page |
+| `resources/js/Pages/AiSettings/Index.jsx` | same | copy | Admin preset AI settings page |
 | `resources/js/Components/ui/*` (12) | same | copy | shadcn components |
 | `public/images/*.svg` | same | copy | Branding assets |
 

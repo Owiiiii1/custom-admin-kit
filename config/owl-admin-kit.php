@@ -4,7 +4,7 @@ $publishMap = require __DIR__.'/publish-map.php';
 
 return [
 
-    'version' => '0.2.0',
+    'version' => '0.3.0',
 
     'name' => 'custom-admin-kit',
 
@@ -24,15 +24,12 @@ return [
         ],
     ],
 
-    /*
-    | v0.1 is core-only. Other presets are reserved for future releases.
-    */
-    'presets' => ['core'],
+    'presets' => ['core', 'admin'],
 
     'unavailable_presets' => [
-        'full' => 'Full preset is not available in v0.1. Use --preset=core.',
-        'auth' => 'Auth preset is not available in v0.1. Use --preset=core.',
-        'frontend' => 'Frontend preset is not available in v0.1. Use --preset=core.',
+        'full' => 'Full preset is not available yet. Use --preset=admin (recommended) or --preset=core.',
+        'auth' => 'Use --preset=admin for auth/admin shell support.',
+        'frontend' => 'Use --preset=core or --preset=admin with owl-admin:frontend-setup.',
     ],
 
     'state_file' => 'storage/app/owl-admin-kit.json',
@@ -42,12 +39,13 @@ return [
     'frontend_setup' => [
         'backup_path' => 'storage/app/owl-admin-kit/backups',
         'state_file' => 'storage/app/owl-admin-kit/frontend-setup-state.json',
-        'supported_presets' => ['core'],
+        'supported_presets' => ['core', 'admin'],
     ],
 
     'paths' => [
         'config' => 'config/owl-admin.php',
         'routes_core' => 'routes/owl-admin-core.php',
+        'routes_auth' => 'routes/owl-admin-auth.php',
         'merge_snippets' => 'docs/vendor/owl-admin/merge-snippets',
     ],
 
@@ -63,7 +61,7 @@ return [
     ],
 
     'admin' => [
-        'login_path' => 'admin',
+        'login_path' => 'login',
         'dashboard_route' => 'dashboard',
         'route_prefix' => '',
         'middleware' => ['web', 'auth'],
@@ -123,8 +121,8 @@ return [
     ],
 
     'features' => [
-        'auth' => false,
-        'frontend' => false,
+        'auth' => true,
+        'frontend' => true,
         'database' => false,
         'filament' => false,
         'domain_modules' => false,

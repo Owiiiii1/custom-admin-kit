@@ -9,9 +9,9 @@ use OwlSolutions\CustomAdminKit\Support\SmokeTester;
 class SmokeCommand extends BaseKitCommand
 {
     protected $signature = 'owl-admin:smoke
-                            {--preset=core : Preset context (v0.1: core only)}';
+                            {--preset=core : Preset context (core|admin)}';
 
-    protected $description = 'Run post-install smoke checks for core admin kit';
+    protected $description = 'Run post-install smoke checks for admin kit preset';
 
     public function handle(SmokeTester $tester, PublishMapResolver $publishMap): int
     {

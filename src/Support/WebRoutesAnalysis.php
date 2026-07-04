@@ -22,12 +22,15 @@ class WebRoutesAnalysis
 
     public function __construct(
         public readonly string $pagesFileStatus,
+        public readonly string $authFileStatus,
         public readonly string $webRoutesStatus,
-        public readonly bool $hasInclude,
+        public readonly bool $hasPagesInclude,
+        public readonly bool $hasAuthInclude,
         public readonly bool $hasInertiaDependency,
         public readonly string $action,
         public readonly string $reason,
         public readonly bool $shouldCreatePagesFile = false,
+        public readonly bool $shouldCreateAuthFile = false,
         public readonly bool $shouldMergeWebInclude = false,
         public readonly ?string $manualSnippetPath = null,
         public readonly ?string $inertiaInstallHint = null,
@@ -45,7 +48,7 @@ class WebRoutesAnalysis
 
     public function hasChanges(): bool
     {
-        return $this->canAutoCreatePages() || $this->canAutoMergeInclude();
+        return $this->canAutoCreatePages() || $this->shouldCreateAuthFile || $this->canAutoMergeInclude();
     }
 
     public function requiresManualMerge(): bool

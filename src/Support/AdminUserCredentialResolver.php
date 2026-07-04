@@ -21,6 +21,8 @@ class AdminUserCredentialResolver
             return AdminUserCredentialResolution::fail('Admin user creation is disabled (admin_user.enabled = false).');
         }
 
+        $emailWasExplicit = $emailOverride !== null && $emailOverride !== '';
+        $passwordWasExplicit = $passwordOverride !== null && $passwordOverride !== '';
         $name = (string) config('owl-admin-kit.admin_user.name', 'Admin');
         $email = $emailOverride ?? $this->resolveEmail($interactive, $emailOverride);
         $passwordResult = $this->resolvePassword($interactive, $passwordOverride);
@@ -39,7 +41,8 @@ class AdminUserCredentialResolver
 
         [$password, $generated] = $passwordResult;
 
-        $validationError = $this->validateForbiddenCredentials($email, $password);
+        $allowExplicitInsecure = $emailWasExplicit && $passwordWasExplicit;
+        $validationError = $this->validateForbiddenCredentials($email, $password, $allowExplicitInsecure);
 
         if ($validationError !== null) {
             return AdminUserCredentialResolution::fail($validationError);
@@ -49,7 +52,7 @@ class AdminUserCredentialResolver
             return AdminUserCredentialResolution::fail('Invalid admin email address.');
         }
 
-        if (strlen($password) < 6) {
+        if (! $allowExplicitInsecure && strlen($password) < 6) {
             return AdminUserCredentialResolution::fail('Admin password must be at least 6 characters.');
         }
 
@@ -69,7 +72,7 @@ class AdminUserCredentialResolver
         $password = $this->passwordFromEnv();
 
         if ($password !== null && $password !== '') {
-            return $this->validateForbiddenCredentials($email, $password) === null;
+            return $this->validateForbiddenCredentials($email, $password, false) === null;
         }
 
         return $this->defaultPasswordGenerationAllowed();
@@ -154,8 +157,12 @@ class AdminUserCredentialResolver
         return app()->environment('local');
     }
 
-    private function validateForbiddenCredentials(string $email, string $password): ?string
+    private function validateForbiddenCredentials(string $email, string $password, bool $allowExplicitInsecure): ?string
     {
+        if ($allowExplicitInsecure) {
+            return null;
+        }
+
         if (strtolower($email) === self::FORBIDDEN_EMAIL) {
             return 'Email admin@admin.com is not allowed. Set OWL_ADMIN_EMAIL to a unique address.';
         }

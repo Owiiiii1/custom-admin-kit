@@ -15,7 +15,7 @@ return [
 
     'route_prefix' => env('OWL_ADMIN_ROUTE_PREFIX', ''),
 
-    'login_path' => env('OWL_ADMIN_LOGIN_PATH', 'admin'),
+    'login_path' => env('OWL_ADMIN_LOGIN_PATH', 'login'),
 
     'dashboard_route' => env('OWL_ADMIN_DASHBOARD_ROUTE', 'dashboard'),
 

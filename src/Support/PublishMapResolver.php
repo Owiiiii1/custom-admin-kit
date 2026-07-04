@@ -4,6 +4,10 @@ namespace OwlSolutions\CustomAdminKit\Support;
 
 class PublishMapResolver
 {
+    private const INHERITED_PRESETS = [
+        'admin' => ['core'],
+    ];
+
     /**
      * @return list<array<string, mixed>>
      */
@@ -16,10 +20,32 @@ class PublishMapResolver
             return $map;
         }
 
-        return array_values(array_filter(
+        $allowed = array_merge(self::INHERITED_PRESETS[$preset] ?? [], [$preset]);
+        $priorities = array_flip($allowed);
+
+        $filtered = array_values(array_filter(
             $map,
-            fn (array $entry): bool => ($entry['preset'] ?? null) === $preset
+            static fn (array $entry): bool => in_array(($entry['preset'] ?? null), $allowed, true)
         ));
+
+        usort(
+            $filtered,
+            static function (array $left, array $right) use ($priorities): int {
+                $leftPreset = (string) ($left['preset'] ?? '');
+                $rightPreset = (string) ($right['preset'] ?? '');
+
+                return ($priorities[$leftPreset] ?? 0) <=> ($priorities[$rightPreset] ?? 0);
+            }
+        );
+
+        $deduped = [];
+        foreach ($filtered as $entry) {
+            $target = (string) ($entry['target'] ?? '');
+            $dedupeKey = $target !== '' ? $target : (string) ($entry['stub'] ?? '');
+            $deduped[$dedupeKey] = $entry;
+        }
+
+        return array_values($deduped);
     }
 
     /**

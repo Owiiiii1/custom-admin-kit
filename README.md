@@ -1,8 +1,8 @@
 # OwlSolutions Custom Admin Kit
 
-Installable Laravel package that publishes a **core-only** Inertia + React admin shell and UI components, with optional safe frontend setup (v0.2).
+Installable Laravel package for a generic Inertia + React admin shell.
 
-**Version:** 0.2.0 — core stubs + `owl-admin:frontend-setup`
+**Version:** 0.3.0 — `core` preset and `admin` preset (core + auth/admin shell + AI Settings)
 
 ## Requirements
 
@@ -18,11 +18,11 @@ See [COMPATIBILITY.md](./COMPATIBILITY.md) and [docs/TODO_DEPENDENCIES.md](./doc
 ## Commands
 
 ```bash
-php artisan owl-admin:doctor [--preset=core]
-php artisan owl-admin:install [--preset=core] [--dry-run] [--backup] [--force] [--migrate]
-php artisan owl-admin:frontend-setup [--preset=core] [--dry-run] [--backup] [--force] [--install-npm] [--run-build] [--strict]
+php artisan owl-admin:doctor [--preset=core|admin]
+php artisan owl-admin:install [--preset=core|admin] [--dry-run] [--backup] [--force] [--migrate]
+php artisan owl-admin:frontend-setup [--preset=core|admin] [--dry-run] [--backup] [--force] [--install-npm] [--run-build] [--strict]
 php artisan owl-admin:make-admin
-php artisan owl-admin:smoke [--preset=core]
+php artisan owl-admin:smoke [--preset=core|admin]
 php artisan owl-admin:repair [--preset=core] [--backup] [--force]
 php artisan owl-admin:uninstall [--keep-files]
 ```
@@ -31,33 +31,27 @@ php artisan owl-admin:uninstall [--keep-files]
 
 | Preset | Status |
 |--------|--------|
-| `core` | **Available** — config, health route, admin shell, UI components |
-| `full`, `auth`, `frontend` | **Blocked** — exit code 1 with guidance to use `--preset=core` |
+| `core` | **Available** — lightweight skeleton (dashboard/settings/app-settings/statistics + UI) |
+| `admin` | **Available** — core + login/logout + profile + users-in-settings + AI Settings + full generic AdminLayout |
+| `full` | **Blocked** — use `--preset=admin` |
 
 Full file map: [docs/PACKAGE_FILE_MAP.md](./docs/PACKAGE_FILE_MAP.md)
 
-## Recommended install flow (v0.2.0)
+## Recommended install flow (v0.3.0)
 
 ```bash
 composer config repositories.custom-admin-kit vcs git@github.com:Owiiiii1/custom-admin-kit.git
-composer require owlsolutions/custom-admin-kit:v0.2.0
+composer require owlsolutions/custom-admin-kit:v0.3.0
 
 composer require inertiajs/inertia-laravel tightenco/ziggy
 php artisan inertia:middleware
 
-php artisan owl-admin:doctor --preset=core
-php artisan owl-admin:install --preset=core --backup --migrate --no-smoke
-php artisan owl-admin:frontend-setup --preset=core --backup --install-npm --run-build
-php artisan owl-admin:smoke --preset=core
+php artisan owl-admin:doctor --preset=admin
+php artisan owl-admin:install --preset=admin --backup --migrate --no-smoke
+php artisan owl-admin:frontend-setup --preset=admin --backup --install-npm --run-build
+php artisan owl-admin:make-admin --email=admin@admin.com --password=admin
+php artisan owl-admin:smoke --preset=admin
 ```
-
-Create an admin user separately:
-
-```bash
-php artisan owl-admin:make-admin
-```
-
-Host auth/login routes and Blade `@vite` / `@inertia` wiring are still the host app's responsibility — see [INSTALL.md](./INSTALL.md) and [TROUBLESHOOTING.md](./TROUBLESHOOTING.md).
 
 ## Version overview
 
@@ -65,6 +59,16 @@ Host auth/login routes and Blade `@vite` / `@inertia` wiring are still the host 
 |---------|--------|
 | **0.1.x** | Core stubs only (`owl-admin:install`) — manual frontend/route merge |
 | **0.2.0** | Core stubs + safe `owl-admin:frontend-setup` for npm, Vite, Inertia, middleware, routes |
+| **0.3.0** | New `admin` preset (core + auth/login/logout + profile + users in settings + AI Settings) |
+
+## AI Settings
+
+- Providers: `OpenAI`, `Anthropic`, `Gemini`
+- Exactly one active provider/model at a time
+- API keys are stored in DB via encrypted cast (`api_key => encrypted`)
+- Connection check loads available models through Laravel HTTP client
+- `AdminLayout` header shows AI status badge from shared Inertia props (`owlAdmin.ai`)
+- No provider SDK dependencies required
 
 ## Documentation
 
@@ -78,9 +82,9 @@ Host auth/login routes and Blade `@vite` / `@inertia` wiring are still the host 
 ## Package layout
 
 ```
-config/owl-admin-kit.php    # supported matrix, core preset, branding, publish map
-config/publish-map.php      # 23 core-only copy entries
-stubs/                      # safe core stubs only
+config/owl-admin-kit.php    # supported matrix, presets, branding, publish map
+config/publish-map.php      # core + admin copy entries
+stubs/                      # core and admin preset stubs
 src/Commands/               # doctor, install, frontend-setup, make-admin, smoke, repair
 docs/merge-snippets/        # manual merge templates for non-standard host files
 ```

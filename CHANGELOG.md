@@ -2,6 +2,45 @@
 
 ## [Unreleased]
 
+## 0.3.0 — 2026-07-04
+
+### Added
+
+- New `admin` preset: core skeleton + generic auth/admin shell
+- Auth routes stub: `GET /login`, `POST /login`, `POST /logout`
+- Generic profile route/page support: `GET/PATCH/DELETE /profile` and `PUT /password`
+- Generic users management in settings (`settings.users.store/update/destroy`) using default Laravel `users` table
+- Admin preset stubs for:
+  - `Auth/Login.jsx`
+  - `Layouts/AuthLayout.jsx`
+  - full `Layouts/AdminLayout.jsx` with generic sidebar/header/profile/logout
+  - `Pages/Settings/Index.jsx` (users + locale)
+  - `Pages/Profile/Edit.jsx`
+- AI Settings support (admin preset):
+  - route/page: `GET /ai-settings` (`AiSettings/Index`)
+  - actions: save key, check connection, activate model, deactivate provider
+  - backend stubs: `AiProviderSetting` model, AI settings controller, provider manager and provider clients
+  - migration stub: `create_ai_provider_settings_table`
+- Header AI badge support via shared Inertia props (`owlAdmin.ai`)
+- Frontend setup route merge now supports admin includes:
+  - `require __DIR__.'/owl-admin-pages.php';`
+  - `require __DIR__.'/owl-admin-auth.php';`
+- Smoke checks for `--preset=admin`:
+  - auth routes, profile route, AI routes, auth/login files, AI files/migration/table, users table, dashboard auth middleware
+
+### Changed
+
+- `owl-admin:doctor`, `owl-admin:install`, `owl-admin:frontend-setup`, `owl-admin:smoke` now support `--preset=admin`
+- `PublishMapResolver` now supports inherited preset resolution (`admin` includes `core`) with override-by-target behavior
+- Package config version bumped to `0.3.0`
+- Default `login_path` changed from `admin` to `login`
+- `owl-admin:make-admin` now accepts explicitly provided weak credentials (warning only), while keeping non-explicit guardrails
+
+### Kept unchanged
+
+- `core` preset behavior remains available for lightweight installs
+- Domain/business modules are still excluded (customers/orders/staff/services/calendar/public booking)
+
 ## 0.2.2 — 2026-07-03
 
 ### Fixed

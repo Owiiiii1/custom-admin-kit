@@ -43,7 +43,7 @@ class FrontendSetupPlanner
         $inertiaMiddlewareSteps = $this->inertiaMiddlewareMerger->plan($basePath);
         $inertiaMiddlewareAnalysis = $inertiaMiddlewareSteps[0]['analysis'] ?? null;
 
-        $webRoutesSteps = $this->webRoutesMerger->plan($basePath);
+        $webRoutesSteps = $this->webRoutesMerger->plan($basePath, $preset);
         $webRoutesAnalysis = $this->extractWebRoutesAnalysis($webRoutesSteps);
 
         $planSteps = array_merge(
@@ -197,7 +197,7 @@ class FrontendSetupPlanner
             $results[] = $dependencyResult;
         }
 
-        $webRoutesAnalysis = $this->webRoutesMerger->analyze($basePath);
+        $webRoutesAnalysis = $this->webRoutesMerger->analyze($basePath, $preset);
 
         if (! $webRoutesAnalysis->hasInertiaDependency) {
             $results[] = CheckResult::warn(
@@ -227,7 +227,7 @@ class FrontendSetupPlanner
         if (! $this->frontendDependencies->requiresFrontend($preset)) {
             $results[] = CheckResult::warn('frontend-preset', 'Preset does not declare frontend stubs.');
         } else {
-            $results[] = CheckResult::pass('frontend-preset', 'Core preset requires frontend npm packages.');
+            $results[] = CheckResult::pass('frontend-preset', "Preset [{$preset}] requires frontend npm packages.");
         }
 
         return $results;

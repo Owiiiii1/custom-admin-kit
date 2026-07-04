@@ -43,6 +43,11 @@ class MakeAdminCommand extends BaseKitCommand
 
         $credentials = $resolved->credentials;
 
+        if (($emailOverride !== null && strtolower($emailOverride) === 'admin@admin.com')
+            || ($passwordOverride !== null && $passwordOverride === 'admin')) {
+            $this->warn('You passed weak credentials explicitly. Use strong credentials outside local/testing environments.');
+        }
+
         try {
             $user = $creator->create($credentials);
         } catch (\RuntimeException $exception) {
@@ -51,7 +56,10 @@ class MakeAdminCommand extends BaseKitCommand
             return self::FAILURE;
         }
 
-        $this->info('Admin user saved: '.$user->email.' (id: '.$user->getKey().')');
+        $this->info(
+            ($user->wasRecentlyCreated ? 'Admin user created: ' : 'Admin user updated: ')
+            .$user->email.' (id: '.$user->getKey().')'
+        );
 
         if ($credentials->passwordWasGenerated) {
             $this->warn('A random password was generated (local dev). Store it securely:');

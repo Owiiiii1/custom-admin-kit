@@ -6,6 +6,7 @@
 |---------|----------------|
 | **v0.1.1** | **Core stubs only** — `owl-admin:install` publishes 23 files (config, health route, JSX/CSS/UI). Host must merge `package.json`, Vite, Inertia entry, routes, and middleware manually. |
 | **v0.2.0** | **Core stubs + frontend setup** — everything in v0.1.x plus `owl-admin:frontend-setup` for safe merges of host frontend files and core admin routes. |
+| **v0.3.0** | **Admin preset available** — `preset=admin` installs core + login/logout/profile/settings-users + AI Settings pages and generic controllers/services. |
 
 Recommended flow for new projects: install core stubs, then run frontend setup with `--backup`.
 
@@ -15,7 +16,7 @@ Recommended flow for new projects: install core stubs, then run frontend setup w
 
 ```bash
 composer config repositories.custom-admin-kit vcs git@github.com:Owiiiii1/custom-admin-kit.git
-composer require owlsolutions/custom-admin-kit:v0.2.0
+composer require owlsolutions/custom-admin-kit:v0.3.0
 ```
 
 Or from Packagist / path repository:
@@ -34,10 +35,10 @@ php artisan inertia:middleware
 ## 2. Doctor
 
 ```bash
-php artisan owl-admin:doctor --preset=core
+php artisan owl-admin:doctor --preset=admin
 ```
 
-Prints: **Core preset does not install landing domain modules.**
+Prints: **Admin preset installs generic auth/admin shell (no business domain modules).**
 
 Checks: PHP/Laravel/Node, writable paths, `.env` keys, recommended Composer dependencies, **frontend npm packages (warn if missing)**, publish conflicts.
 
@@ -94,7 +95,7 @@ OWL_ADMIN_NAME="Site Admin"
 ```
 
 ```bash
-php artisan owl-admin:install --preset=core --seed --backup
+php artisan owl-admin:install --preset=admin --seed --backup
 ```
 
 | Rule | Behavior |
@@ -102,7 +103,7 @@ php artisan owl-admin:install --preset=core --seed --backup
 | Non-interactive `--seed` | Requires `OWL_ADMIN_EMAIL` + `OWL_ADMIN_PASSWORD` in `.env` (FAIL if missing) |
 | Interactive `--seed` | Prompts for missing email/password |
 | Local dev auto-password | `OWL_ADMIN_ALLOW_DEFAULT_PASSWORD=true` + `APP_ENV=local` generates a random password if `OWL_ADMIN_PASSWORD` is empty |
-| Forbidden | `admin@admin.com`, password `admin` — always rejected |
+| Explicit CLI credentials | `--email`/`--password` values are accepted as-is (warning only for weak credentials). |
 
 Without `--seed`, install only publishes stubs. Run `owl-admin:make-admin` separately.
 
@@ -124,22 +125,22 @@ Lists core stub files without writing.
 ## 6. Install
 
 ```bash
-php artisan owl-admin:install --preset=core --backup
+php artisan owl-admin:install --preset=admin --backup
 ```
 
 | Option | Description |
 |--------|-------------|
-| `--preset` | `core` only in v0.1 |
+| `--preset` | `core` or `admin` |
 | `--force` | Overwrite existing destination files |
 | `--backup` | Copy `.owl-admin-backup-*` before overwrite |
 | `--dry-run` | Plan only |
 | `--install-frontend-deps` | Install missing npm packages before publishing |
 | `--seed` | Create admin user after publish (env or interactive; never hardcoded) |
 
-Blocked presets (`full`, `auth`, `frontend`) exit with code 1:
+Blocked preset (`full`) exits with code 1:
 
 ```text
-Full preset is not available in v0.1. Use --preset=core.
+Full preset is not available yet. Use --preset=admin.
 ```
 
 Writes:
@@ -197,6 +198,15 @@ OWL_ADMIN_LOGO="/images/company-logo.svg"
 ```bash
 php artisan owl-admin:smoke --preset=core
 ```
+
+## 8.1 AI Settings (preset=admin)
+
+- Supported providers: `OpenAI`, `Anthropic`, `Gemini`
+- API keys are stored encrypted in `ai_provider_settings` (`api_key` encrypted cast)
+- Exactly one provider/model can be active at a time
+- Header badge in `AdminLayout` reflects AI state:
+  - `AI: not connected`
+  - `AI: connected — {provider} / {model}`
 
 ## 9. Repair
 
@@ -365,7 +375,7 @@ If auto-merge would change the middleware:
 HandleInertiaRequests changes require --backup or --force.
 ```
 
-### Safe core admin routes (v0.2)
+### Safe admin routes (v0.3)
 
 Core JSX pages are published by install, but `routes/web.php` is never overwritten. Frontend setup can:
 
@@ -380,6 +390,7 @@ Routes use `AdminRouteMiddleware::stack()` and register:
 | `GET /settings` | `Settings/Index` | `settings.index` |
 | `GET /app-settings` | `AppSettings/Index` | `app-settings.index` |
 | `GET /statistics/logs` | `Statistics/Logs` | `statistics.logs` |
+| `GET /ai-settings` | `AiSettings/Index` | `ai-settings.index` |
 
 Requires `inertiajs/inertia-laravel` on the host app.
 

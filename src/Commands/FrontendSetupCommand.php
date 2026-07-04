@@ -22,7 +22,7 @@ use OwlSolutions\CustomAdminKit\Support\WebRoutesMerger;
 class FrontendSetupCommand extends BaseKitCommand
 {
     protected $signature = 'owl-admin:frontend-setup
-                            {--preset=core : Frontend setup preset (v0.2: core only)}
+                            {--preset=core : Frontend setup preset (core|admin)}
                             {--dry-run : Show merge plan without writing files}
                             {--backup : Backup host files before merge}
                             {--force : Apply merges even when files already exist}
@@ -30,7 +30,7 @@ class FrontendSetupCommand extends BaseKitCommand
                             {--run-build : Run npm run build after setup}
                             {--strict : Fail when vite.config.js is missing the Inertia app entry and cannot auto-merge}';
 
-    protected $description = 'Prepare host Laravel frontend for published core admin stubs (v0.2)';
+    protected $description = 'Prepare host Laravel frontend for published admin kit stubs';
 
     public function handle(
         FrontendSetupPlanner $planner,
@@ -197,13 +197,18 @@ class FrontendSetupCommand extends BaseKitCommand
         }
 
         if ($result->webRoutesAnalysis instanceof WebRoutesAnalysis && $result->webRoutesAnalysis->hasChanges()) {
-            if (! $webRoutesMerger->apply($basePath, $result->webRoutesAnalysis)) {
+            if (! $webRoutesMerger->apply($basePath, $preset, $result->webRoutesAnalysis)) {
                 return $this->failFrontendSetup($recorder, $basePath, 'Route setup failed.');
             }
 
             if ($result->webRoutesAnalysis->shouldCreatePagesFile) {
                 $recorder?->markRoutesFileCreated();
                 $this->line('  <fg=green>→</> routes/owl-admin-pages.php created.');
+            }
+
+            if ($result->webRoutesAnalysis->shouldCreateAuthFile) {
+                $recorder?->markRoutesFileCreated();
+                $this->line('  <fg=green>→</> routes/owl-admin-auth.php created.');
             }
 
             if ($result->webRoutesAnalysis->shouldMergeWebInclude) {
@@ -484,7 +489,9 @@ class FrontendSetupCommand extends BaseKitCommand
         }
 
         $this->line('  <fg=gray>→</> owl-admin-pages.php: '.$analysis->pagesFileStatus);
-        $this->line('  <fg=gray>→</> web.php include: '.($analysis->hasInclude ? 'yes' : 'no'));
+        $this->line('  <fg=gray>→</> owl-admin-auth.php: '.$analysis->authFileStatus);
+        $this->line('  <fg=gray>→</> web.php include (pages): '.($analysis->hasPagesInclude ? 'yes' : 'no'));
+        $this->line('  <fg=gray>→</> web.php include (auth): '.($analysis->hasAuthInclude ? 'yes' : 'no'));
         $this->line('  <fg=gray>→</> inertia dependency: '.($analysis->hasInertiaDependency ? 'yes' : 'no'));
         $this->line('  <fg=gray>→</> action: '.$analysis->action);
         $this->line('  <fg=gray>→</> reason: '.$analysis->reason);

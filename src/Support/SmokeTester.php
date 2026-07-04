@@ -4,6 +4,7 @@ namespace OwlSolutions\CustomAdminKit\Support;
 
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
 
 class SmokeTester
 {
@@ -12,7 +13,7 @@ class SmokeTester
     public const SECTION_FRONTEND_SETUP = 'Frontend setup';
 
     /** @var list<string> */
-    private const FRONTEND_ROUTE_NAMES = [
+    private const FRONTEND_CORE_ROUTE_NAMES = [
         'dashboard',
         'settings.index',
         'app-settings.index',
@@ -65,6 +66,14 @@ class SmokeTester
             section: self::SECTION_CORE,
         );
 
+        if ($preset === 'admin') {
+            $results[] = CheckResult::pass(
+                'admin-scope',
+                'Admin preset includes generic auth/profile/settings shell only.',
+                section: self::SECTION_CORE,
+            );
+        }
+
         $reportPath = $basePath.'/'.config('owl-admin-kit.report_file');
         $results[] = File::exists($reportPath)
             ? CheckResult::pass('install-report', 'Install report exists.', section: self::SECTION_CORE)
@@ -108,7 +117,89 @@ class SmokeTester
             ? CheckResult::pass('publish-map', "Core publish map defines {$expected} copy target(s).", section: self::SECTION_CORE)
             : CheckResult::fail('publish-map', 'Core publish map defines 0 copy target(s).', section: self::SECTION_CORE);
 
-        $results = array_merge($results, $this->checkFrontendSetup($basePath, $frontendState));
+        if ($preset === 'admin') {
+            $results[] = $this->checkFrontendFile(
+                'auth-login-page',
+                $basePath.'/resources/js/Pages/Auth/Login.jsx',
+                'resources/js/Pages/Auth/Login.jsx exists.',
+                'resources/js/Pages/Auth/Login.jsx is missing.',
+                self::SECTION_CORE,
+            );
+            $results[] = $this->checkFrontendFile(
+                'auth-layout',
+                $basePath.'/resources/js/Layouts/AuthLayout.jsx',
+                'resources/js/Layouts/AuthLayout.jsx exists.',
+                'resources/js/Layouts/AuthLayout.jsx is missing.',
+                self::SECTION_CORE,
+            );
+            $results[] = $this->checkFrontendFile(
+                'profile-page',
+                $basePath.'/resources/js/Pages/Profile/Edit.jsx',
+                'resources/js/Pages/Profile/Edit.jsx exists.',
+                'resources/js/Pages/Profile/Edit.jsx is missing.',
+                self::SECTION_CORE,
+            );
+            $results[] = $this->checkFrontendFile(
+                'ai-settings-page',
+                $basePath.'/resources/js/Pages/AiSettings/Index.jsx',
+                'resources/js/Pages/AiSettings/Index.jsx exists.',
+                'resources/js/Pages/AiSettings/Index.jsx is missing.',
+                self::SECTION_CORE,
+            );
+            $results[] = $this->checkFrontendFile(
+                'ai-settings-model',
+                $basePath.'/app/Models/AiProviderSetting.php',
+                'app/Models/AiProviderSetting.php exists.',
+                'app/Models/AiProviderSetting.php is missing.',
+                self::SECTION_CORE,
+            );
+            $aiMigration = glob($basePath.'/database/migrations/*create_ai_provider_settings_table*.php') ?: [];
+            $results[] = $aiMigration !== []
+                ? CheckResult::pass('ai-settings-migration', 'ai_provider_settings migration exists.', section: self::SECTION_CORE)
+                : CheckResult::fail('ai-settings-migration', 'ai_provider_settings migration is missing.', section: self::SECTION_CORE);
+            $results[] = class_exists(\OwlSolutions\CustomAdminKit\Commands\MakeAdminCommand::class)
+                ? CheckResult::pass('make-admin-command', 'owl-admin:make-admin command class is available.', section: self::SECTION_CORE)
+                : CheckResult::fail('make-admin-command', 'owl-admin:make-admin command class is missing.', section: self::SECTION_CORE);
+
+            $hasUsersTable = false;
+            try {
+                $hasUsersTable = Schema::hasTable('users');
+            } catch (\Throwable) {
+                $hasUsersTable = false;
+            }
+
+            $results[] = $hasUsersTable
+                ? CheckResult::pass('users-table', 'users table exists.', section: self::SECTION_CORE)
+                : CheckResult::warn('users-table', 'users table missing (run migrations).', 'php artisan migrate', self::SECTION_CORE);
+
+            $hasAiTable = false;
+            try {
+                $hasAiTable = Schema::hasTable('ai_provider_settings');
+            } catch (\Throwable) {
+                $hasAiTable = false;
+            }
+            $results[] = $hasAiTable
+                ? CheckResult::pass('ai-provider-settings-table', 'ai_provider_settings table exists.', section: self::SECTION_CORE)
+                : CheckResult::fail('ai-provider-settings-table', 'ai_provider_settings table missing.', 'Run php artisan migrate.', self::SECTION_CORE);
+
+            $results[] = $this->checkFrontendFile(
+                'admin-layout-ai-badge',
+                $basePath.'/resources/js/Layouts/AdminLayout.jsx',
+                'resources/js/Layouts/AdminLayout.jsx exists.',
+                'resources/js/Layouts/AdminLayout.jsx is missing.',
+                self::SECTION_CORE,
+            );
+            $layoutContents = File::exists($basePath.'/resources/js/Layouts/AdminLayout.jsx')
+                ? (string) File::get($basePath.'/resources/js/Layouts/AdminLayout.jsx')
+                : '';
+            $results[] = str_contains($layoutContents, 'ai-settings.index')
+                ? CheckResult::pass('admin-layout-ai-menu', 'AdminLayout contains AI Settings menu route.', section: self::SECTION_CORE)
+                : CheckResult::warn('admin-layout-ai-menu', 'AdminLayout AI Settings menu route not detected.', section: self::SECTION_CORE);
+
+            $results[] = $this->checkDashboardAuthMiddleware();
+        }
+
+        $results = array_merge($results, $this->checkFrontendSetup($basePath, $frontendState, $preset));
 
         return $results;
     }
@@ -116,7 +207,7 @@ class SmokeTester
     /**
      * @return list<CheckResult>
      */
-    public function checkFrontendSetup(string $basePath, ?array $frontendState): array
+    public function checkFrontendSetup(string $basePath, ?array $frontendState, string $preset = 'core'): array
     {
         $section = self::SECTION_FRONTEND_SETUP;
 
@@ -151,7 +242,7 @@ class SmokeTester
             CheckResult::pass('frontend-state', 'completed', section: $section),
         ];
 
-        foreach (self::FRONTEND_ROUTE_NAMES as $routeName) {
+        foreach ($this->frontendRouteNamesForPreset($preset) as $routeName) {
             $results[] = $this->checkFrontendRoute($routeName, $section);
         }
 
@@ -163,7 +254,7 @@ class SmokeTester
             $section,
         );
 
-        $results[] = $this->checkWebRoutesInclude($basePath, $section);
+        $results[] = $this->checkWebRoutesInclude($basePath, $section, $preset);
         $results[] = $this->checkInertiaOwlAdminShare($basePath, $section);
         $results[] = $this->checkFrontendFile(
             'app-jsx',
@@ -212,7 +303,7 @@ class SmokeTester
             : CheckResult::fail($name, $failMessage, section: $section);
     }
 
-    private function checkWebRoutesInclude(string $basePath, string $section): CheckResult
+    private function checkWebRoutesInclude(string $basePath, string $section, string $preset): CheckResult
     {
         $webRoutesPath = $basePath.'/routes/web.php';
 
@@ -227,20 +318,101 @@ class SmokeTester
 
         $contents = (string) File::get($webRoutesPath);
 
-        if (str_contains($contents, 'owl-admin-pages.php')) {
+        $missing = [];
+        foreach ($this->requiredWebRouteIncludes($preset) as $include) {
+            if (! str_contains($contents, $include)) {
+                $missing[] = $include;
+            }
+        }
+
+        if ($missing === []) {
             return CheckResult::pass(
                 'web-routes-include',
-                'routes/web.php includes owl-admin-pages.php.',
+                'routes/web.php includes required owl-admin route files.',
                 section: $section,
             );
         }
 
         return CheckResult::fail(
             'web-routes-include',
-            'routes/web.php does not include owl-admin-pages.php.',
-            "Add:\nrequire __DIR__.'/owl-admin-pages.php';",
+            'routes/web.php does not include all required owl-admin route files.',
+            "Add:\n".implode("\n", array_map(static fn (string $file): string => "require __DIR__.'/{$file}';", $missing)),
             $section,
         );
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function frontendRouteNamesForPreset(string $preset): array
+    {
+        $routes = self::FRONTEND_CORE_ROUTE_NAMES;
+
+        if ($preset === 'admin') {
+            $routes = array_merge($routes, [
+                'login',
+                'logout',
+                'profile.edit',
+                'ai-settings.index',
+                'ai-settings.save-key',
+                'ai-settings.check',
+                'ai-settings.activate',
+                'ai-settings.deactivate',
+            ]);
+        }
+
+        return $routes;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function requiredWebRouteIncludes(string $preset): array
+    {
+        $includes = ['owl-admin-pages.php'];
+
+        if ($preset === 'admin') {
+            $includes[] = 'owl-admin-auth.php';
+        }
+
+        return $includes;
+    }
+
+    private function checkDashboardAuthMiddleware(): CheckResult
+    {
+        try {
+            $route = Route::getRoutes()->getByName('dashboard');
+            if ($route === null) {
+                return CheckResult::fail(
+                    'dashboard-auth-middleware',
+                    'Route dashboard not found.',
+                    'Ensure routes/owl-admin-pages.php is loaded.',
+                    self::SECTION_CORE,
+                );
+            }
+
+            $middleware = $route->middleware();
+
+            if (in_array('auth', $middleware, true)) {
+                return CheckResult::pass(
+                    'dashboard-auth-middleware',
+                    'dashboard route uses auth middleware.',
+                    section: self::SECTION_CORE,
+                );
+            }
+
+            return CheckResult::fail(
+                'dashboard-auth-middleware',
+                'dashboard route is not protected by auth middleware.',
+                section: self::SECTION_CORE,
+            );
+        } catch (\Throwable) {
+            return CheckResult::warn(
+                'dashboard-auth-middleware',
+                'Could not inspect middleware for dashboard route.',
+                section: self::SECTION_CORE,
+            );
+        }
     }
 
     private function checkInertiaOwlAdminShare(string $basePath, string $section): CheckResult

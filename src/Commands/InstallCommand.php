@@ -19,7 +19,7 @@ use OwlSolutions\CustomAdminKit\Support\VersionChecker;
 class InstallCommand extends BaseKitCommand
 {
     protected $signature = 'owl-admin:install
-                            {--preset=core : Install preset (v0.1: core only)}
+                            {--preset=core : Install preset (core|admin)}
                             {--force : Overwrite existing published files}
                             {--backup : Backup existing files before overwrite}
                             {--dry-run : Show publish plan without writing files}
@@ -29,7 +29,7 @@ class InstallCommand extends BaseKitCommand
                             {--migrate : Run php artisan migrate after publishing stubs}
                             {--no-smoke : Skip post-install smoke checks}';
 
-    protected $description = 'Install the core admin kit (v0.1) into this Laravel application';
+    protected $description = 'Install the admin kit preset into this Laravel application';
 
     public function handle(
         VersionChecker $versions,
@@ -47,7 +47,7 @@ class InstallCommand extends BaseKitCommand
 
         if (! $publishMap->isPresetAvailable($preset)) {
             $message = $publishMap->unavailablePresetMessage($preset)
-                ?? "Preset [{$preset}] is not available in v0.1.";
+                ?? "Preset [{$preset}] is not available.";
             $this->error($message);
 
             return self::FAILURE;
@@ -65,7 +65,11 @@ class InstallCommand extends BaseKitCommand
         $interactive = ! $this->option('no-interaction');
         $credentialResolver = new AdminUserCredentialResolver($this);
 
-        $this->line('  <fg=cyan>→</> Core preset does not install landing domain modules.');
+        $this->line(
+            $preset === 'admin'
+                ? '  <fg=cyan>→</> Admin preset installs generic auth/admin shell (no business domain modules).'
+                : '  <fg=cyan>→</> Core preset does not install landing domain modules.'
+        );
 
         $preflight = [
             ...$versions->check(),
@@ -155,7 +159,7 @@ class InstallCommand extends BaseKitCommand
             $this->warn('Dry run — no files will be written.');
         }
 
-        $this->info('Publishing core stubs...');
+        $this->info("Publishing {$preset} preset stubs...");
         $published = $publisher->install($stubsPath, $basePath, $preset, $force, $dryRun, $backup, $report);
 
         foreach ($report->steps() as $step) {
@@ -247,11 +251,11 @@ class InstallCommand extends BaseKitCommand
         ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n");
 
         $this->newLine();
-        $this->info('Core admin kit installed successfully.');
-        $this->line('Next: php artisan owl-admin:frontend-setup --preset=core --backup --install-npm --run-build');
+        $this->info("Admin kit preset [{$preset}] installed successfully.");
+        $this->line("Next: php artisan owl-admin:frontend-setup --preset={$preset} --backup --install-npm --run-build");
 
         if (! $withSeed) {
-            $this->line('Create admin: php artisan owl-admin:make-admin');
+            $this->line('Create admin: php artisan owl-admin:make-admin --email=admin@admin.com --password=admin');
         }
 
         if ($runMigrate) {
