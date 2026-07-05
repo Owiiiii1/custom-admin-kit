@@ -1,11 +1,11 @@
-# Package File Map — v0.3 (`core` + `admin`)
+# Package File Map — v0.4 (`core` + `admin`)
 
-Package: `owlsolutions/custom-admin-kit` **0.3.0**
+Package: `owlsolutions/custom-admin-kit` **0.4.0**
 
 Available presets:
 
 - `core` — lightweight skeleton
-- `admin` — core + auth/profile/users/settings + AI settings shell
+- `admin` — core + auth/profile/users/settings + AI settings + starter CRM
 
 **Canonical UI path:** `resources/js/Components/ui` (import: `@/Components/ui`)
 
@@ -34,6 +34,25 @@ Available presets:
 | `resources/js/Pages/Auth/Login.jsx` | same | copy | Admin preset login page |
 | `resources/js/Pages/Profile/Edit.jsx` | same | copy | Admin preset profile page |
 | `resources/js/Pages/AiSettings/Index.jsx` | same | copy | Admin preset AI settings page |
+| `app/Models/Customer.php` | same | copy | Admin preset CRM customer model |
+| `app/Models/Order.php` | same | copy | Admin preset CRM order model |
+| `app/Models/Service.php` | same | copy | Admin preset CRM service model |
+| `app/Models/Staff.php` | same | copy | Admin preset CRM staff model |
+| `app/Http/Controllers/CustomersController.php` | same | copy | Admin preset CRM customers controller |
+| `app/Http/Controllers/OrdersController.php` | same | copy | Admin preset CRM orders controller |
+| `app/Http/Controllers/ServicesController.php` | same | copy | Admin preset CRM services controller |
+| `app/Http/Controllers/StaffController.php` | same | copy | Admin preset CRM staff controller |
+| `app/Http/Controllers/CalendarController.php` | same | copy | Admin preset CRM calendar controller |
+| `database/migrations/*create_customers_table*.php` | same | copy | Admin preset CRM customers migration |
+| `database/migrations/*create_services_table*.php` | same | copy | Admin preset CRM services migration |
+| `database/migrations/*create_staff_table*.php` | same | copy | Admin preset CRM staff migration |
+| `database/migrations/*create_orders_table*.php` | same | copy | Admin preset CRM orders migration |
+| `database/migrations/*create_order_staff_table*.php` | same | copy | Admin preset CRM order_staff migration |
+| `resources/js/Pages/Customers/Index.jsx` | same | copy | Admin preset CRM customers page |
+| `resources/js/Pages/Orders/Index.jsx` | same | copy | Admin preset CRM orders page |
+| `resources/js/Pages/Services/Index.jsx` | same | copy | Admin preset CRM services page |
+| `resources/js/Pages/Staff/Index.jsx` | same | copy | Admin preset CRM staff page |
+| `resources/js/Pages/Calendar/Index.jsx` | same | copy | Admin preset CRM calendar page |
 | `resources/js/Components/ui/*` (12) | same | copy | shadcn components |
 | `public/images/*.svg` | same | copy | Branding assets |
 

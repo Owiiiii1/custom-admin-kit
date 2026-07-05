@@ -1,5 +1,22 @@
 # Progress Log
 
+## 2026-07-05 — v0.4.0 starter CRM modules
+
+- Added admin preset starter CRM backend stubs:
+  - models: `Customer`, `Order`, `Service`, `Staff`
+  - controllers: `CustomersController`, `OrdersController`, `ServicesController`, `StaffController`, `CalendarController`
+  - migrations: `customers`, `services`, `staff`, `orders`, `order_staff`
+- Added admin preset CRM frontend pages:
+  - `Customers/Index`
+  - `Orders/Index`
+  - `Services/Index`
+  - `Staff/Index`
+  - `Calendar/Index`
+- Extended admin routes with `customers.*`, `orders.*`, `services.*`, `staff.*`, `calendar.index`
+- Updated `AdminLayout` menu with CRM sections while keeping AI status badge.
+- Extended smoke/doctor checks for CRM files, migrations, tables, and routes.
+- Kept `core` preset compatibility unchanged (`23/23` expectations preserved).
+
 ## 2026-07-04 — v0.3.1 compatibility patch
 
 - Restored backward compatibility for `WebRoutesMerger::apply()` old/new signatures
@@ -24,11 +41,8 @@
 - Added encrypted `ai_provider_settings` migration/model stubs
 - Added AI status badge in `AdminLayout` via shared Inertia props (`owlAdmin.ai`)
 
-## Planned v0.4.0 (TODO)
+## Planned next (TODO)
 
-- Customers
-- Staff/Employees
-- Services
-- Orders/Jobs
-- Statuses
-- Calendar
+- Advanced order workflow states and timeline interactions
+- Optional richer calendar grid view
+- Optional custom order status dictionaries

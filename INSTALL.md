@@ -8,8 +8,11 @@
 | **v0.2.0** | **Core stubs + frontend setup** — everything in v0.1.x plus `owl-admin:frontend-setup` for safe merges of host frontend files and core admin routes. |
 | **v0.3.0** | **Admin preset available** — `preset=admin` installs core + login/logout/profile/settings-users + AI Settings pages and generic controllers/services. |
 | **v0.3.1** | **Recommended patch release** — keeps `v0.3.0` functionality, fixes package test compatibility, preserves `core` published-files `23/23`. |
+| **v0.4.0** | **Starter CRM release** — extends `preset=admin` with Customers, Orders, Services, Staff, Calendar (generic CRUD + simple calendar). |
 
-Recommended flow for new projects: use **`v0.3.1`**, then install core stubs and run frontend setup with `--backup`.
+For admin + AI only: `v0.3.1` remains stable.
+
+For new starter CRM projects (after CI passes): use **`v0.4.0`**.
 
 ---
 
@@ -17,7 +20,7 @@ Recommended flow for new projects: use **`v0.3.1`**, then install core stubs and
 
 ```bash
 composer config repositories.custom-admin-kit vcs git@github.com:Owiiiii1/custom-admin-kit.git
-composer require owlsolutions/custom-admin-kit:v0.3.1
+composer require owlsolutions/custom-admin-kit:v0.4.0
 ```
 
 Or from Packagist / path repository:

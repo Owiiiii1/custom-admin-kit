@@ -69,7 +69,7 @@ class SmokeTester
         if ($preset === 'admin') {
             $results[] = CheckResult::pass(
                 'admin-scope',
-                'Admin preset includes generic auth/profile/settings shell only.',
+                'Admin preset includes generic auth/profile/settings shell and starter CRM modules.',
                 section: self::SECTION_CORE,
             );
         }
@@ -153,10 +153,53 @@ class SmokeTester
                 'app/Models/AiProviderSetting.php is missing.',
                 self::SECTION_CORE,
             );
+            $results[] = $this->checkFrontendFile(
+                'crm-customer-model',
+                $basePath.'/app/Models/Customer.php',
+                'app/Models/Customer.php exists.',
+                'app/Models/Customer.php is missing.',
+                self::SECTION_CORE,
+            );
+            $results[] = $this->checkFrontendFile(
+                'crm-service-model',
+                $basePath.'/app/Models/Service.php',
+                'app/Models/Service.php exists.',
+                'app/Models/Service.php is missing.',
+                self::SECTION_CORE,
+            );
+            $results[] = $this->checkFrontendFile(
+                'crm-staff-model',
+                $basePath.'/app/Models/Staff.php',
+                'app/Models/Staff.php exists.',
+                'app/Models/Staff.php is missing.',
+                self::SECTION_CORE,
+            );
+            $results[] = $this->checkFrontendFile(
+                'crm-order-model',
+                $basePath.'/app/Models/Order.php',
+                'app/Models/Order.php exists.',
+                'app/Models/Order.php is missing.',
+                self::SECTION_CORE,
+            );
             $aiMigration = glob($basePath.'/database/migrations/*create_ai_provider_settings_table*.php') ?: [];
             $results[] = $aiMigration !== []
                 ? CheckResult::pass('ai-settings-migration', 'ai_provider_settings migration exists.', section: self::SECTION_CORE)
                 : CheckResult::fail('ai-settings-migration', 'ai_provider_settings migration is missing.', section: self::SECTION_CORE);
+            $results[] = (glob($basePath.'/database/migrations/*create_customers_table*.php') ?: []) !== []
+                ? CheckResult::pass('crm-customers-migration', 'customers migration exists.', section: self::SECTION_CORE)
+                : CheckResult::fail('crm-customers-migration', 'customers migration is missing.', section: self::SECTION_CORE);
+            $results[] = (glob($basePath.'/database/migrations/*create_services_table*.php') ?: []) !== []
+                ? CheckResult::pass('crm-services-migration', 'services migration exists.', section: self::SECTION_CORE)
+                : CheckResult::fail('crm-services-migration', 'services migration is missing.', section: self::SECTION_CORE);
+            $results[] = (glob($basePath.'/database/migrations/*create_staff_table*.php') ?: []) !== []
+                ? CheckResult::pass('crm-staff-migration', 'staff migration exists.', section: self::SECTION_CORE)
+                : CheckResult::fail('crm-staff-migration', 'staff migration is missing.', section: self::SECTION_CORE);
+            $results[] = (glob($basePath.'/database/migrations/*create_orders_table*.php') ?: []) !== []
+                ? CheckResult::pass('crm-orders-migration', 'orders migration exists.', section: self::SECTION_CORE)
+                : CheckResult::fail('crm-orders-migration', 'orders migration is missing.', section: self::SECTION_CORE);
+            $results[] = (glob($basePath.'/database/migrations/*create_order_staff_table*.php') ?: []) !== []
+                ? CheckResult::pass('crm-order-staff-migration', 'order_staff migration exists.', section: self::SECTION_CORE)
+                : CheckResult::fail('crm-order-staff-migration', 'order_staff migration is missing.', section: self::SECTION_CORE);
             $results[] = class_exists(\OwlSolutions\CustomAdminKit\Commands\MakeAdminCommand::class)
                 ? CheckResult::pass('make-admin-command', 'owl-admin:make-admin command class is available.', section: self::SECTION_CORE)
                 : CheckResult::fail('make-admin-command', 'owl-admin:make-admin command class is missing.', section: self::SECTION_CORE);
@@ -181,6 +224,11 @@ class SmokeTester
             $results[] = $hasAiTable
                 ? CheckResult::pass('ai-provider-settings-table', 'ai_provider_settings table exists.', section: self::SECTION_CORE)
                 : CheckResult::fail('ai-provider-settings-table', 'ai_provider_settings table missing.', 'Run php artisan migrate.', self::SECTION_CORE);
+            $results[] = $this->checkTableExists('crm-customers-table', 'customers');
+            $results[] = $this->checkTableExists('crm-services-table', 'services');
+            $results[] = $this->checkTableExists('crm-staff-table', 'staff');
+            $results[] = $this->checkTableExists('crm-orders-table', 'orders');
+            $results[] = $this->checkTableExists('crm-order-staff-table', 'order_staff');
 
             $results[] = $this->checkFrontendFile(
                 'admin-layout-ai-badge',
@@ -189,12 +237,52 @@ class SmokeTester
                 'resources/js/Layouts/AdminLayout.jsx is missing.',
                 self::SECTION_CORE,
             );
+            $results[] = $this->checkFrontendFile(
+                'crm-customers-page',
+                $basePath.'/resources/js/Pages/Customers/Index.jsx',
+                'resources/js/Pages/Customers/Index.jsx exists.',
+                'resources/js/Pages/Customers/Index.jsx is missing.',
+                self::SECTION_CORE,
+            );
+            $results[] = $this->checkFrontendFile(
+                'crm-services-page',
+                $basePath.'/resources/js/Pages/Services/Index.jsx',
+                'resources/js/Pages/Services/Index.jsx exists.',
+                'resources/js/Pages/Services/Index.jsx is missing.',
+                self::SECTION_CORE,
+            );
+            $results[] = $this->checkFrontendFile(
+                'crm-staff-page',
+                $basePath.'/resources/js/Pages/Staff/Index.jsx',
+                'resources/js/Pages/Staff/Index.jsx exists.',
+                'resources/js/Pages/Staff/Index.jsx is missing.',
+                self::SECTION_CORE,
+            );
+            $results[] = $this->checkFrontendFile(
+                'crm-orders-page',
+                $basePath.'/resources/js/Pages/Orders/Index.jsx',
+                'resources/js/Pages/Orders/Index.jsx exists.',
+                'resources/js/Pages/Orders/Index.jsx is missing.',
+                self::SECTION_CORE,
+            );
+            $results[] = $this->checkFrontendFile(
+                'crm-calendar-page',
+                $basePath.'/resources/js/Pages/Calendar/Index.jsx',
+                'resources/js/Pages/Calendar/Index.jsx exists.',
+                'resources/js/Pages/Calendar/Index.jsx is missing.',
+                self::SECTION_CORE,
+            );
             $layoutContents = File::exists($basePath.'/resources/js/Layouts/AdminLayout.jsx')
                 ? (string) File::get($basePath.'/resources/js/Layouts/AdminLayout.jsx')
                 : '';
             $results[] = str_contains($layoutContents, 'ai-settings.index')
                 ? CheckResult::pass('admin-layout-ai-menu', 'AdminLayout contains AI Settings menu route.', section: self::SECTION_CORE)
                 : CheckResult::warn('admin-layout-ai-menu', 'AdminLayout AI Settings menu route not detected.', section: self::SECTION_CORE);
+            $results[] = $this->checkLayoutMenuContains($layoutContents, 'customers.index', 'admin-layout-customers-menu');
+            $results[] = $this->checkLayoutMenuContains($layoutContents, 'orders.index', 'admin-layout-orders-menu');
+            $results[] = $this->checkLayoutMenuContains($layoutContents, 'services.index', 'admin-layout-services-menu');
+            $results[] = $this->checkLayoutMenuContains($layoutContents, 'staff.index', 'admin-layout-staff-menu');
+            $results[] = $this->checkLayoutMenuContains($layoutContents, 'calendar.index', 'admin-layout-calendar-menu');
 
             $results[] = $this->checkDashboardAuthMiddleware();
         }
@@ -353,6 +441,11 @@ class SmokeTester
                 'login',
                 'logout',
                 'profile.edit',
+                'customers.index',
+                'services.index',
+                'staff.index',
+                'orders.index',
+                'calendar.index',
                 'ai-settings.index',
                 'ai-settings.save-key',
                 'ai-settings.check',
@@ -538,5 +631,26 @@ class SmokeTester
         }
 
         return $targets;
+    }
+
+    private function checkTableExists(string $checkName, string $tableName): CheckResult
+    {
+        $exists = false;
+        try {
+            $exists = Schema::hasTable($tableName);
+        } catch (\Throwable) {
+            $exists = false;
+        }
+
+        return $exists
+            ? CheckResult::pass($checkName, "{$tableName} table exists.", section: self::SECTION_CORE)
+            : CheckResult::fail($checkName, "{$tableName} table missing.", 'Run php artisan migrate.', self::SECTION_CORE);
+    }
+
+    private function checkLayoutMenuContains(string $layoutContents, string $routeName, string $checkName): CheckResult
+    {
+        return str_contains($layoutContents, $routeName)
+            ? CheckResult::pass($checkName, "AdminLayout contains {$routeName} menu route.", section: self::SECTION_CORE)
+            : CheckResult::warn($checkName, "AdminLayout {$routeName} menu route not detected.", section: self::SECTION_CORE);
     }
 }

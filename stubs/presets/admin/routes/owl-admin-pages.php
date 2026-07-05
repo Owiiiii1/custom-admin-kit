@@ -1,6 +1,11 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\CustomersController;
+use App\Http\Controllers\OrdersController;
+use App\Http\Controllers\ServicesController;
+use App\Http\Controllers\StaffController;
 use App\Http\Controllers\Settings\AiSettingsController;
 use App\Http\Controllers\Settings\SettingsController;
 use App\Http\Controllers\Settings\UserController as SettingsUserController;
@@ -18,6 +23,30 @@ Route::middleware(AdminRouteMiddleware::stack())->group(function () {
     Route::get('/dashboard', function () {
         return Inertia::render('Dashboard');
     })->name('dashboard');
+
+    Route::get('/customers', [CustomersController::class, 'index'])->name('customers.index');
+    Route::post('/customers', [CustomersController::class, 'store'])->name('customers.store');
+    Route::patch('/customers/{customer}', [CustomersController::class, 'update'])->name('customers.update');
+    Route::delete('/customers/{customer}', [CustomersController::class, 'destroy'])->name('customers.destroy');
+
+    Route::get('/orders', [OrdersController::class, 'index'])->name('orders.index');
+    Route::post('/orders', [OrdersController::class, 'store'])->name('orders.store');
+    Route::patch('/orders/{order}', [OrdersController::class, 'update'])->name('orders.update');
+    Route::delete('/orders/{order}', [OrdersController::class, 'destroy'])->name('orders.destroy');
+    Route::patch('/orders/{order}/status', [OrdersController::class, 'updateStatus'])->name('orders.status');
+    Route::patch('/orders/{order}/assign', [OrdersController::class, 'assign'])->name('orders.assign');
+
+    Route::get('/services', [ServicesController::class, 'index'])->name('services.index');
+    Route::post('/services', [ServicesController::class, 'store'])->name('services.store');
+    Route::patch('/services/{service}', [ServicesController::class, 'update'])->name('services.update');
+    Route::delete('/services/{service}', [ServicesController::class, 'destroy'])->name('services.destroy');
+
+    Route::get('/staff', [StaffController::class, 'index'])->name('staff.index');
+    Route::post('/staff', [StaffController::class, 'store'])->name('staff.store');
+    Route::patch('/staff/{staff}', [StaffController::class, 'update'])->name('staff.update');
+    Route::delete('/staff/{staff}', [StaffController::class, 'destroy'])->name('staff.destroy');
+
+    Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
 
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::post('/settings/language', [SettingsController::class, 'updateLanguage'])->name('settings.language.update');

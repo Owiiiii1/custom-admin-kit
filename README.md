@@ -2,7 +2,7 @@
 
 Installable Laravel package for a generic Inertia + React admin shell.
 
-**Version:** 0.3.1 — `core` preset and `admin` preset (core + auth/admin shell + AI Settings)
+**Version:** 0.4.0 — `core` preset and `admin` preset (core + auth/admin shell + AI Settings + starter CRM)
 
 ## Requirements
 
@@ -32,16 +32,16 @@ php artisan owl-admin:uninstall [--keep-files]
 | Preset | Status |
 |--------|--------|
 | `core` | **Available** — lightweight skeleton (dashboard/settings/app-settings/statistics + UI) |
-| `admin` | **Available** — core + login/logout + profile + users-in-settings + AI Settings + full generic AdminLayout |
+| `admin` | **Available** — core + login/logout + profile + users-in-settings + AI Settings + starter CRM + full generic AdminLayout |
 | `full` | **Blocked** — use `--preset=admin` |
 
 Full file map: [docs/PACKAGE_FILE_MAP.md](./docs/PACKAGE_FILE_MAP.md)
 
-## Recommended install flow (v0.3.1)
+## Recommended install flow (v0.4.0)
 
 ```bash
 composer config repositories.custom-admin-kit vcs git@github.com:Owiiiii1/custom-admin-kit.git
-composer require owlsolutions/custom-admin-kit:v0.3.1
+composer require owlsolutions/custom-admin-kit:v0.4.0
 
 composer require inertiajs/inertia-laravel tightenco/ziggy
 php artisan inertia:middleware
@@ -61,8 +61,19 @@ php artisan owl-admin:smoke --preset=admin
 | **0.2.0** | Core stubs + safe `owl-admin:frontend-setup` for npm, Vite, Inertia, middleware, routes |
 | **0.3.0** | New `admin` preset (core + auth/login/logout + profile + users in settings + AI Settings) |
 | **0.3.1** | Patch compatibility fix after `0.3.0`: test/backward-compat restoration, core preset remains `23/23` |
+| **0.4.0** | Starter CRM modules in admin preset: Customers, Orders, Services, Staff, Calendar |
 
-Recommended for new installs: **`0.3.1`**.
+`0.3.1` remains stable for admin + AI.
+
+Recommended for new starter CRM installs (after CI passes): **`0.4.0`**.
+
+## Starter CRM (v0.4.0)
+
+- Customers: basic CRUD
+- Orders: basic CRUD + status + staff assignment
+- Services: basic CRUD
+- Staff: basic CRUD
+- Calendar: simple grouped timeline from `orders.scheduled_at`
 
 ## AI Settings
 

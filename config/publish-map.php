@@ -351,5 +351,176 @@ $add(
     'low',
     'AI settings page.',
 );
+$add(
+    $map,
+    'app/Models/Customer.php',
+    'presets/admin/app/Models/Customer.php',
+    'app/Models/Customer.php',
+    'admin',
+    'medium',
+    'Starter CRM customer model.',
+);
+$add(
+    $map,
+    'app/Models/Service.php',
+    'presets/admin/app/Models/Service.php',
+    'app/Models/Service.php',
+    'admin',
+    'medium',
+    'Starter CRM service model.',
+);
+$add(
+    $map,
+    'app/Models/Staff.php',
+    'presets/admin/app/Models/Staff.php',
+    'app/Models/Staff.php',
+    'admin',
+    'medium',
+    'Starter CRM staff model.',
+);
+$add(
+    $map,
+    'app/Models/Order.php',
+    'presets/admin/app/Models/Order.php',
+    'app/Models/Order.php',
+    'admin',
+    'medium',
+    'Starter CRM order model.',
+);
+$add(
+    $map,
+    'app/Http/Controllers/CustomersController.php',
+    'presets/admin/app/Http/Controllers/CustomersController.php',
+    'app/Http/Controllers/CustomersController.php',
+    'admin',
+    'medium',
+    'Starter CRM customers controller.',
+);
+$add(
+    $map,
+    'app/Http/Controllers/ServicesController.php',
+    'presets/admin/app/Http/Controllers/ServicesController.php',
+    'app/Http/Controllers/ServicesController.php',
+    'admin',
+    'medium',
+    'Starter CRM services controller.',
+);
+$add(
+    $map,
+    'app/Http/Controllers/StaffController.php',
+    'presets/admin/app/Http/Controllers/StaffController.php',
+    'app/Http/Controllers/StaffController.php',
+    'admin',
+    'medium',
+    'Starter CRM staff controller.',
+);
+$add(
+    $map,
+    'app/Http/Controllers/OrdersController.php',
+    'presets/admin/app/Http/Controllers/OrdersController.php',
+    'app/Http/Controllers/OrdersController.php',
+    'admin',
+    'medium',
+    'Starter CRM orders controller.',
+);
+$add(
+    $map,
+    'app/Http/Controllers/CalendarController.php',
+    'presets/admin/app/Http/Controllers/CalendarController.php',
+    'app/Http/Controllers/CalendarController.php',
+    'admin',
+    'medium',
+    'Starter CRM calendar controller.',
+);
+$add(
+    $map,
+    'database/migrations/2026_07_05_100000_create_customers_table.php',
+    'presets/admin/database/migrations/2026_07_05_100000_create_customers_table.php',
+    'database/migrations/2026_07_05_100000_create_customers_table.php',
+    'admin',
+    'medium',
+    'Starter CRM customers migration.',
+);
+$add(
+    $map,
+    'database/migrations/2026_07_05_100100_create_services_table.php',
+    'presets/admin/database/migrations/2026_07_05_100100_create_services_table.php',
+    'database/migrations/2026_07_05_100100_create_services_table.php',
+    'admin',
+    'medium',
+    'Starter CRM services migration.',
+);
+$add(
+    $map,
+    'database/migrations/2026_07_05_100200_create_staff_table.php',
+    'presets/admin/database/migrations/2026_07_05_100200_create_staff_table.php',
+    'database/migrations/2026_07_05_100200_create_staff_table.php',
+    'admin',
+    'medium',
+    'Starter CRM staff migration.',
+);
+$add(
+    $map,
+    'database/migrations/2026_07_05_100300_create_orders_table.php',
+    'presets/admin/database/migrations/2026_07_05_100300_create_orders_table.php',
+    'database/migrations/2026_07_05_100300_create_orders_table.php',
+    'admin',
+    'medium',
+    'Starter CRM orders migration.',
+);
+$add(
+    $map,
+    'database/migrations/2026_07_05_100400_create_order_staff_table.php',
+    'presets/admin/database/migrations/2026_07_05_100400_create_order_staff_table.php',
+    'database/migrations/2026_07_05_100400_create_order_staff_table.php',
+    'admin',
+    'medium',
+    'Starter CRM order_staff migration.',
+);
+$add(
+    $map,
+    'resources/js/Pages/Customers/Index.jsx',
+    'presets/admin/resources/js/Pages/Customers/Index.jsx',
+    'resources/js/Pages/Customers/Index.jsx',
+    'admin',
+    'low',
+    'Starter CRM customers page.',
+);
+$add(
+    $map,
+    'resources/js/Pages/Services/Index.jsx',
+    'presets/admin/resources/js/Pages/Services/Index.jsx',
+    'resources/js/Pages/Services/Index.jsx',
+    'admin',
+    'low',
+    'Starter CRM services page.',
+);
+$add(
+    $map,
+    'resources/js/Pages/Staff/Index.jsx',
+    'presets/admin/resources/js/Pages/Staff/Index.jsx',
+    'resources/js/Pages/Staff/Index.jsx',
+    'admin',
+    'low',
+    'Starter CRM staff page.',
+);
+$add(
+    $map,
+    'resources/js/Pages/Orders/Index.jsx',
+    'presets/admin/resources/js/Pages/Orders/Index.jsx',
+    'resources/js/Pages/Orders/Index.jsx',
+    'admin',
+    'low',
+    'Starter CRM orders page.',
+);
+$add(
+    $map,
+    'resources/js/Pages/Calendar/Index.jsx',
+    'presets/admin/resources/js/Pages/Calendar/Index.jsx',
+    'resources/js/Pages/Calendar/Index.jsx',
+    'admin',
+    'low',
+    'Starter CRM calendar page.',
+);
 
 return $map;

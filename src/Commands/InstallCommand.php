@@ -67,7 +67,7 @@ class InstallCommand extends BaseKitCommand
 
         $this->line(
             $preset === 'admin'
-                ? '  <fg=cyan>→</> Admin preset installs generic auth/admin shell (no business domain modules).'
+                ? '  <fg=cyan>→</> Admin preset installs generic auth/admin shell with starter CRM modules (no client-specific domain modules).'
                 : '  <fg=cyan>→</> Core preset does not install landing domain modules.'
         );
 

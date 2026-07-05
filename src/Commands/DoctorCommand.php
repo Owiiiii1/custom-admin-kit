@@ -49,7 +49,7 @@ class DoctorCommand extends BaseKitCommand
 
         $this->line(
             $preset === 'admin'
-                ? '  <fg=cyan>→</> Admin preset installs generic auth/admin shell (no business domain modules).'
+                ? '  <fg=cyan>→</> Admin preset installs generic auth/admin shell with starter CRM modules (no client-specific domain modules).'
                 : '  <fg=cyan>→</> Core preset does not install landing domain modules.'
         );
         $this->newLine();
@@ -195,6 +195,50 @@ class DoctorCommand extends BaseKitCommand
                 'Will be published by owl-admin:install --preset=admin.',
             );
 
+        foreach ([
+            'app/Models/Customer.php' => 'crm-customer-model',
+            'app/Models/Service.php' => 'crm-service-model',
+            'app/Models/Staff.php' => 'crm-staff-model',
+            'app/Models/Order.php' => 'crm-order-model',
+            'resources/js/Pages/Customers/Index.jsx' => 'crm-customers-page',
+            'resources/js/Pages/Services/Index.jsx' => 'crm-services-page',
+            'resources/js/Pages/Staff/Index.jsx' => 'crm-staff-page',
+            'resources/js/Pages/Orders/Index.jsx' => 'crm-orders-page',
+            'resources/js/Pages/Calendar/Index.jsx' => 'crm-calendar-page',
+        ] as $relativePath => $checkName) {
+            $absolutePath = $basePath.'/'.$relativePath;
+            $results[] = File::exists($absolutePath)
+                ? \OwlSolutions\CustomAdminKit\Support\CheckResult::pass($checkName, "{$relativePath} exists.")
+                : \OwlSolutions\CustomAdminKit\Support\CheckResult::warn(
+                    $checkName,
+                    "{$relativePath} not found yet.",
+                    'Will be published by owl-admin:install --preset=admin.',
+                );
+        }
+
+        foreach ([
+            'customers',
+            'services',
+            'staff',
+            'orders',
+            'order_staff',
+        ] as $tableName) {
+            $exists = false;
+            try {
+                $exists = Schema::hasTable($tableName);
+            } catch (\Throwable) {
+                $exists = false;
+            }
+
+            $results[] = $exists
+                ? \OwlSolutions\CustomAdminKit\Support\CheckResult::pass("crm-table-{$tableName}", "{$tableName} table exists.")
+                : \OwlSolutions\CustomAdminKit\Support\CheckResult::warn(
+                    "crm-table-{$tableName}",
+                    "{$tableName} table not migrated yet.",
+                    'Run php artisan migrate before smoke checks.',
+                );
+        }
+
         if (File::exists($basePath.'/routes/owl-admin-pages.php')) {
             $results[] = Route::has('ai-settings.index')
                 ? \OwlSolutions\CustomAdminKit\Support\CheckResult::pass('ai-route', 'ai-settings.index route is registered.')
@@ -203,10 +247,31 @@ class DoctorCommand extends BaseKitCommand
                     'ai-settings.index route is not registered yet.',
                     'Run owl-admin:frontend-setup --preset=admin.',
                 );
+
+            foreach ([
+                'customers.index',
+                'services.index',
+                'staff.index',
+                'orders.index',
+                'calendar.index',
+            ] as $routeName) {
+                $results[] = Route::has($routeName)
+                    ? \OwlSolutions\CustomAdminKit\Support\CheckResult::pass("crm-route-{$routeName}", "{$routeName} route is registered.")
+                    : \OwlSolutions\CustomAdminKit\Support\CheckResult::warn(
+                        "crm-route-{$routeName}",
+                        "{$routeName} route is not registered yet.",
+                        'Run owl-admin:frontend-setup --preset=admin.',
+                    );
+            }
         } else {
             $results[] = \OwlSolutions\CustomAdminKit\Support\CheckResult::warn(
                 'ai-route',
                 'routes/owl-admin-pages.php is missing, route check skipped.',
+                'Run owl-admin:frontend-setup --preset=admin.',
+            );
+            $results[] = \OwlSolutions\CustomAdminKit\Support\CheckResult::warn(
+                'crm-routes',
+                'routes/owl-admin-pages.php is missing, CRM route checks skipped.',
                 'Run owl-admin:frontend-setup --preset=admin.',
             );
         }

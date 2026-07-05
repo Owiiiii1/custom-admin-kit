@@ -1,14 +1,19 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
+    CalendarDays,
     ChartColumn,
     ChevronDown,
+    Contact,
     FileText,
     Home,
+    LayoutGrid,
     LogOut,
     Menu,
     Settings,
     ShieldUser,
     UserCircle2,
+    Users,
+    Wrench,
     BrainCircuit,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -17,9 +22,14 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/Components/ui/sh
 
 const navItems = [
     { route: 'dashboard', icon: Home, key: 'home' },
+    { route: 'customers.index', icon: Contact, key: 'customers' },
+    { route: 'orders.index', icon: LayoutGrid, key: 'orders' },
+    { route: 'services.index', icon: Wrench, key: 'services' },
+    { route: 'staff.index', icon: Users, key: 'staff' },
+    { route: 'calendar.index', icon: CalendarDays, key: 'calendar' },
+    { route: 'ai-settings.index', icon: BrainCircuit, key: 'aiSettings' },
     { route: 'settings.index', icon: ShieldUser, key: 'usersSettings' },
     { route: 'app-settings.index', icon: Settings, key: 'appSettings' },
-    { route: 'ai-settings.index', icon: BrainCircuit, key: 'aiSettings' },
 ];
 
 export default function AdminLayout({ title, children }) {
@@ -39,6 +49,11 @@ export default function AdminLayout({ title, children }) {
     const uiText = {
         en: {
             home: 'Dashboard',
+            customers: 'Customers',
+            orders: 'Orders',
+            services: 'Services',
+            staff: 'Staff',
+            calendar: 'Calendar',
             usersSettings: 'Users / Settings',
             appSettings: 'App settings',
             statistics: 'Statistics',
@@ -50,6 +65,11 @@ export default function AdminLayout({ title, children }) {
         },
         ru: {
             home: 'Дашборд',
+            customers: 'Клиенты',
+            orders: 'Заказы',
+            services: 'Услуги',
+            staff: 'Персонал',
+            calendar: 'Календарь',
             usersSettings: 'Пользователи / Настройки',
             appSettings: 'Настройки приложения',
             statistics: 'Статистика',
@@ -61,6 +81,11 @@ export default function AdminLayout({ title, children }) {
         },
         uk: {
             home: 'Дашборд',
+            customers: 'Клієнти',
+            orders: 'Замовлення',
+            services: 'Послуги',
+            staff: 'Персонал',
+            calendar: 'Календар',
             usersSettings: 'Користувачі / Налаштування',
             appSettings: 'Налаштування застосунку',
             statistics: 'Статистика',
@@ -86,7 +111,7 @@ export default function AdminLayout({ title, children }) {
                 <Link
                     key={`${mobile ? 'mobile-' : ''}${routeName}`}
                     href={route(routeName)}
-                    className={navLinkClass(route().current(`${routeName.split('.')[0]}*`))}
+                    className={navLinkClass(route().current(`${routeName.split('.')[0]}*`) || route().current(routeName))}
                     onClick={() => mobile && setMobileMenuOpen(false)}
                 >
                     <Icon className="h-4 w-4" />

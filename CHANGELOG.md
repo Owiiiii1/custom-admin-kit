@@ -2,6 +2,36 @@
 
 ## [Unreleased]
 
+## 0.4.0 — 2026-07-05
+
+### Added
+
+- Starter CRM modules for `preset=admin`:
+  - `Customers`
+  - `Orders`
+  - `Services`
+  - `Staff`
+  - `Calendar`
+- Admin-only backend stubs:
+  - models: `Customer`, `Order`, `Service`, `Staff`
+  - controllers: `CustomersController`, `OrdersController`, `ServicesController`, `StaffController`, `CalendarController`
+  - migrations: `customers`, `services`, `staff`, `orders`, `order_staff`
+- Admin-only frontend stubs:
+  - `Pages/Customers/Index.jsx`
+  - `Pages/Orders/Index.jsx`
+  - `Pages/Services/Index.jsx`
+  - `Pages/Staff/Index.jsx`
+  - `Pages/Calendar/Index.jsx`
+- Admin routes:
+  - `customers.*`, `orders.*`, `services.*`, `staff.*`, `calendar.index`
+  - optional order actions: `orders.status`, `orders.assign`
+- Smoke/doctor checks extended for CRM files, migrations, tables, routes, and AdminLayout menu entries.
+
+### Compatibility
+
+- `core` preset compatibility is preserved (`23/23` published files expectation unchanged).
+- CRM files are published only for `preset=admin`.
+
 ## 0.3.1 — 2026-07-04
 
 ### Fixed
