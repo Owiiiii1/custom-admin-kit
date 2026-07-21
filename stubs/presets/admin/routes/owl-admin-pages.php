@@ -6,18 +6,27 @@ use App\Http\Controllers\CustomersController;
 use App\Http\Controllers\OrdersController;
 use App\Http\Controllers\ServicesController;
 use App\Http\Controllers\StaffController;
+use App\Http\Controllers\TelegramWebhookController;
 use App\Http\Controllers\Settings\AiSettingsController;
 use App\Http\Controllers\Settings\SettingsController;
+use App\Http\Controllers\Settings\TelegramSettingsController;
 use App\Http\Controllers\Settings\UserController as SettingsUserController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use OwlSolutions\CustomAdminKit\Support\AdminRouteMiddleware;
 
 /*
-| Admin preset pages (v0.3).
+| Admin preset pages (v0.5).
 | Loaded from routes/web.php via:
 | require __DIR__.'/owl-admin-pages.php';
 */
+
+Route::post('/telegram/webhook', TelegramWebhookController::class)
+    ->withoutMiddleware([
+        \Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class,
+        \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
+    ])
+    ->name('telegram.webhook');
 
 Route::middleware(AdminRouteMiddleware::stack())->group(function () {
     Route::get('/dashboard', function () {
@@ -54,8 +63,17 @@ Route::middleware(AdminRouteMiddleware::stack())->group(function () {
     Route::patch('/settings/users/{user}', [SettingsUserController::class, 'update'])->name('settings.users.update');
     Route::delete('/settings/users/{user}', [SettingsUserController::class, 'destroy'])->name('settings.users.destroy');
 
+    Route::post('/settings/telegram/save-token', [TelegramSettingsController::class, 'saveToken'])
+        ->name('settings.telegram.save-token');
+    Route::post('/settings/telegram/check', [TelegramSettingsController::class, 'check'])
+        ->name('settings.telegram.check');
+    Route::post('/settings/telegram/set-webhook', [TelegramSettingsController::class, 'setWebhook'])
+        ->name('settings.telegram.set-webhook');
+    Route::post('/settings/telegram/remove-webhook', [TelegramSettingsController::class, 'removeWebhook'])
+        ->name('settings.telegram.remove-webhook');
+
     Route::get('/app-settings', function () {
-        return Inertia::render('AppSettings/Index');
+        return redirect()->route('settings.index', ['tab' => 'app']);
     })->name('app-settings.index');
 
     Route::get('/ai-settings', [AiSettingsController::class, 'index'])->name('ai-settings.index');

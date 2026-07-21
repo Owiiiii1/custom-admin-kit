@@ -135,7 +135,6 @@ export default function EditProfile() {
                                 e.preventDefault();
                                 deleteForm.delete(route('profile.destroy'), {
                                     preserveScroll: true,
-                                    data: { password: deleteForm.data.password },
                                 });
                             }}
                             className="mt-4 space-y-3"

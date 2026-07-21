@@ -2,6 +2,31 @@
 
 ## [Unreleased]
 
+## 0.5.0 — 2026-07-21
+
+### Added
+
+- Settings hub tabs: General / Users / AI / App / Telegram
+- Telegram / Nutgram integration (admin preset):
+  - model `TelegramBotSetting`, migration `telegram_bot_settings`
+  - settings actions + webhook controller
+  - header Telegram badge via shared Inertia props
+- Package require: `nutgram/nutgram` ^4.48
+- Smoke/doctor checks for Settings panels, Telegram stubs, Nutgram, webhook route, AiPanel `router.post` pattern
+
+### Fixed
+
+- AI API key save: `AiPanel` uses `router.post(url, payload)` instead of broken `useForm` `options.data`
+
+### Changed
+
+- AdminLayout UX sync: language switcher, avatar menu, AI + Telegram badges, Settings secondary nav; AI/App removed from side menu
+- `/ai-settings` and `/app-settings` redirect to Settings hub tabs (`?tab=ai` / `?tab=app`)
+
+### Compatibility
+
+- Starter CRM pages intentionally kept as v0.4.0 inline CRUD (landing CRM is richer; kit stays generic)
+
 ## 0.4.0 — 2026-07-05
 
 ### Added

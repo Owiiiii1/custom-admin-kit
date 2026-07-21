@@ -27,7 +27,7 @@ class UserController extends Controller
             'password' => Hash::make($validated['password']),
         ]);
 
-        return Redirect::route('settings.index');
+        return Redirect::route('settings.index', ['tab' => 'users']);
     }
 
     public function update(Request $request, User $user): RedirectResponse
@@ -56,19 +56,19 @@ class UserController extends Controller
 
         $user->save();
 
-        return Redirect::route('settings.index');
+        return Redirect::route('settings.index', ['tab' => 'users']);
     }
 
     public function destroy(Request $request, User $user): RedirectResponse
     {
         if ((int) $request->user()->id === (int) $user->id) {
-            return Redirect::route('settings.index')->withErrors([
+            return Redirect::route('settings.index', ['tab' => 'users'])->withErrors([
                 'user_delete' => 'You cannot delete your own account from this screen.',
             ]);
         }
 
         $user->delete();
 
-        return Redirect::route('settings.index');
+        return Redirect::route('settings.index', ['tab' => 'users']);
     }
 }

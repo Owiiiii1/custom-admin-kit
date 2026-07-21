@@ -1,11 +1,11 @@
-# Package File Map — v0.4 (`core` + `admin`)
+# Package File Map — v0.5 (`core` + `admin`)
 
-Package: `owlsolutions/custom-admin-kit` **0.4.0**
+Package: `owlsolutions/custom-admin-kit` **0.5.0**
 
 Available presets:
 
 - `core` — lightweight skeleton
-- `admin` — core + auth/profile/users/settings + AI settings + starter CRM
+- `admin` — core + auth/profile + Settings hub (General/Users/AI/App/Telegram) + starter CRM
 
 **Canonical UI path:** `resources/js/Components/ui` (import: `@/Components/ui`)
 
@@ -17,23 +17,32 @@ Available presets:
 | `resources/js/lib/utils.js` | `resources/js/lib/utils.js` | copy | cn() helper |
 | `resources/js/Layouts/AdminLayout.jsx` | same | copy | Core shell (core preset) / full generic shell (admin preset override) |
 | `resources/js/Pages/Dashboard.jsx` | same | copy | Placeholder |
-| `resources/js/Pages/AppSettings/Index.jsx` | same | copy | Placeholder |
+| `resources/js/Pages/AppSettings/Index.jsx` | same | copy | Placeholder (admin redirects `/app-settings` → Settings App tab) |
 | `resources/js/Pages/Statistics/Logs.jsx` | same | copy | Placeholder |
-| `resources/js/Pages/Settings/Index.jsx` | same | copy | Placeholder in core, users management in admin preset override |
+| `resources/js/Pages/Settings/Index.jsx` | same | copy | Placeholder in core; Settings hub shell in admin preset |
+| `resources/js/Pages/Settings/GeneralPanel.jsx` | same | copy | Admin: Settings → General |
+| `resources/js/Pages/Settings/UsersPanel.jsx` | same | copy | Admin: Settings → Users |
+| `resources/js/Pages/Settings/AiPanel.jsx` | same | copy | Admin: Settings → AI (`router.post` key flow) |
+| `resources/js/Pages/Settings/AppPanel.jsx` | same | copy | Admin: Settings → App |
+| `resources/js/Pages/Settings/TelegramPanel.jsx` | same | copy | Admin: Settings → Telegram |
 | `routes/owl-admin-auth.php` | `routes/owl-admin-auth.php` | copy | Admin preset: login/logout routes |
 | `app/Http/Controllers/Auth/AuthenticatedSessionController.php` | same | copy | Admin preset auth controller |
 | `app/Http/Requests/Auth/LoginRequest.php` | same | copy | Admin preset login request |
 | `app/Http/Controllers/ProfileController.php` | same | copy | Admin preset profile controller |
-| `app/Http/Controllers/Settings/SettingsController.php` | same | copy | Admin preset settings controller |
+| `app/Http/Controllers/Settings/SettingsController.php` | same | copy | Admin preset settings hub controller |
 | `app/Http/Controllers/Settings/UserController.php` | same | copy | Admin preset users CRUD controller |
 | `app/Http/Controllers/Settings/AiSettingsController.php` | same | copy | Admin preset AI settings controller |
+| `app/Http/Controllers/Settings/TelegramSettingsController.php` | same | copy | Admin preset Telegram settings actions |
+| `app/Http/Controllers/TelegramWebhookController.php` | same | copy | Admin preset Telegram webhook (secret header) |
 | `app/Models/AiProviderSetting.php` | same | copy | Admin preset AI provider model |
+| `app/Models/TelegramBotSetting.php` | same | copy | Admin preset Telegram bot settings model |
 | `app/Services/Ai/*` | same | copy | Admin preset AI provider service layer |
+| `app/Services/Telegram/TelegramBotManager.php` | same | copy | Admin preset Telegram/Nutgram manager stub |
 | `database/migrations/*create_ai_provider_settings_table*.php` | same | copy | Admin preset AI settings migration |
+| `database/migrations/*create_telegram_bot_settings_table*.php` | same | copy | Admin preset Telegram settings migration |
 | `resources/js/Layouts/AuthLayout.jsx` | same | copy | Admin preset auth wrapper |
 | `resources/js/Pages/Auth/Login.jsx` | same | copy | Admin preset login page |
 | `resources/js/Pages/Profile/Edit.jsx` | same | copy | Admin preset profile page |
-| `resources/js/Pages/AiSettings/Index.jsx` | same | copy | Admin preset AI settings page |
 | `app/Models/Customer.php` | same | copy | Admin preset CRM customer model |
 | `app/Models/Order.php` | same | copy | Admin preset CRM order model |
 | `app/Models/Service.php` | same | copy | Admin preset CRM service model |
@@ -48,10 +57,10 @@ Available presets:
 | `database/migrations/*create_staff_table*.php` | same | copy | Admin preset CRM staff migration |
 | `database/migrations/*create_orders_table*.php` | same | copy | Admin preset CRM orders migration |
 | `database/migrations/*create_order_staff_table*.php` | same | copy | Admin preset CRM order_staff migration |
-| `resources/js/Pages/Customers/Index.jsx` | same | copy | Admin preset CRM customers page |
-| `resources/js/Pages/Orders/Index.jsx` | same | copy | Admin preset CRM orders page |
-| `resources/js/Pages/Services/Index.jsx` | same | copy | Admin preset CRM services page |
-| `resources/js/Pages/Staff/Index.jsx` | same | copy | Admin preset CRM staff page |
+| `resources/js/Pages/Customers/Index.jsx` | same | copy | Admin preset CRM customers page (v0.4.0 inline CRUD) |
+| `resources/js/Pages/Orders/Index.jsx` | same | copy | Admin preset CRM orders page (v0.4.0 inline CRUD) |
+| `resources/js/Pages/Services/Index.jsx` | same | copy | Admin preset CRM services page (v0.4.0 inline CRUD) |
+| `resources/js/Pages/Staff/Index.jsx` | same | copy | Admin preset CRM staff page (v0.4.0 inline CRUD) |
 | `resources/js/Pages/Calendar/Index.jsx` | same | copy | Admin preset CRM calendar page |
 | `resources/js/Components/ui/*` (12) | same | copy | shadcn components |
 | `public/images/*.svg` | same | copy | Branding assets |

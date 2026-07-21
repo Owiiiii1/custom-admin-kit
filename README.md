@@ -2,7 +2,7 @@
 
 Installable Laravel package for a generic Inertia + React admin shell.
 
-**Version:** 0.4.0 — `core` preset and `admin` preset (core + auth/admin shell + AI Settings + starter CRM)
+**Version:** 0.5.0 — `core` preset and `admin` preset (Settings hub + AI + Telegram/Nutgram + starter CRM)
 
 ## Requirements
 
@@ -32,16 +32,16 @@ php artisan owl-admin:uninstall [--keep-files]
 | Preset | Status |
 |--------|--------|
 | `core` | **Available** — lightweight skeleton (dashboard/settings/app-settings/statistics + UI) |
-| `admin` | **Available** — core + login/logout + profile + users-in-settings + AI Settings + starter CRM + full generic AdminLayout |
+| `admin` | **Available** — core + login/logout + profile + Settings hub (General/Users/AI/App/Telegram) + starter CRM + full generic AdminLayout |
 | `full` | **Blocked** — use `--preset=admin` |
 
 Full file map: [docs/PACKAGE_FILE_MAP.md](./docs/PACKAGE_FILE_MAP.md)
 
-## Recommended install flow (v0.4.0)
+## Recommended install flow (v0.5.0)
 
 ```bash
 composer config repositories.custom-admin-kit vcs git@github.com:Owiiiii1/custom-admin-kit.git
-composer require owlsolutions/custom-admin-kit:v0.4.0
+composer require owlsolutions/custom-admin-kit:v0.5.0
 
 composer require inertiajs/inertia-laravel tightenco/ziggy
 php artisan inertia:middleware
@@ -62,12 +62,18 @@ php artisan owl-admin:smoke --preset=admin
 | **0.3.0** | New `admin` preset (core + auth/login/logout + profile + users in settings + AI Settings) |
 | **0.3.1** | Patch compatibility fix after `0.3.0`: test/backward-compat restoration, core preset remains `23/23` |
 | **0.4.0** | Starter CRM modules in admin preset: Customers, Orders, Services, Staff, Calendar |
+| **0.5.0** | Settings hub tabs, AI key save fix, AdminLayout UX sync, Telegram/Nutgram, redirects from `/ai-settings` and `/app-settings` |
 
-`0.3.1` remains stable for admin + AI.
+`0.3.1` remains stable for admin + AI only.
 
-Recommended for new starter CRM installs (after CI passes): **`0.4.0`**.
+Recommended for new installs: **`0.5.0`**.
 
-## Starter CRM (v0.4.0)
+## Settings hub (v0.5.0)
+
+Single `/settings` page with tabs: **General**, **Users**, **AI**, **App**, **Telegram**.  
+`/ai-settings` and `/app-settings` redirect to the matching tab. Side menu no longer lists AI/App as top-level items.
+
+## Starter CRM (v0.4.0, unchanged in 0.5.0)
 
 - Customers: basic CRUD
 - Orders: basic CRUD + status + staff assignment
@@ -75,14 +81,24 @@ Recommended for new starter CRM installs (after CI passes): **`0.4.0`**.
 - Staff: basic CRUD
 - Calendar: simple grouped timeline from `orders.scheduled_at`
 
+Kit CRM stays as simple inline CRUD; richer CRM lives in host apps (e.g. landing).
+
 ## AI Settings
 
 - Providers: `OpenAI`, `Anthropic`, `Gemini`
 - Exactly one active provider/model at a time
 - API keys are stored in DB via encrypted cast (`api_key => encrypted`)
+- Save key from `AiPanel` via `router.post(url, payload)` (do not use `useForm` `options.data`)
 - Connection check loads available models through Laravel HTTP client
 - `AdminLayout` header shows AI status badge from shared Inertia props (`owlAdmin.ai`)
 - No provider SDK dependencies required
+
+## Telegram (v0.5.0)
+
+- Optional bot token configured in Settings → Telegram (encrypted in DB; not required in `.env`)
+- Nutgram pulled via package: `nutgram/nutgram` ^4.48
+- Webhook route + secret header check; header badge via `owlAdmin.telegram`
+- `APP_URL` must be correct for webhook URL registration
 
 ## Documentation
 

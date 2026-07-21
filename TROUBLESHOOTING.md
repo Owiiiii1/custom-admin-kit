@@ -193,6 +193,44 @@ Non-interactive `--seed` requires `OWL_ADMIN_EMAIL` and `OWL_ADMIN_PASSWORD` in 
 
 ---
 
+## AI Settings (v0.5.0)
+
+### AI key not saving
+
+Symptom: Settings → AI accepts input but the key does not persist / request body is empty.
+
+Cause: broken Inertia `useForm().post(..., { data: ... })` options pattern.
+
+Fix: ensure `resources/js/Pages/Settings/AiPanel.jsx` saves with:
+
+```js
+router.post(route('ai-settings.save-key', provider), { api_key: value }, { preserveScroll: true })
+```
+
+Do not pass payload via `useForm` `options.data`. Smoke check `ai-panel-router-post` verifies this.
+
+## Telegram webhook (v0.5.0)
+
+### Webhook returns 403
+
+Symptom: Telegram (or a manual POST) hits `telegram.webhook` and gets `403 Forbidden`.
+
+Cause: missing or mismatched secret header. The controller compares `X-Telegram-Bot-Api-Secret-Token` to the encrypted `webhook_secret` in `telegram_bot_settings`.
+
+Fix:
+
+1. Set webhook from Settings → Telegram (generates/stores secret and registers it with Telegram)
+2. Confirm `APP_URL` is the public HTTPS URL used for the webhook
+3. Manual tests must send the same secret in `X-Telegram-Bot-Api-Secret-Token`
+
+### Webhook returns 419
+
+Symptom: `POST /telegram/webhook` returns `419 Page Expired`.
+
+Cause: CSRF / request forgery middleware still applied (Laravel 13 web stack uses `PreventRequestForgery`).
+
+Fix: keep `withoutMiddleware([PreventRequestForgery::class, ValidateCsrfToken::class])` on `telegram.webhook` in `routes/owl-admin-pages.php`, then `php artisan route:clear`.
+
 ## Doctor failures
 
 ### Required host dependency missing

@@ -331,7 +331,52 @@ $add(
     'resources/js/Pages/Settings/Index.jsx',
     'admin',
     'low',
-    'Settings with users management.',
+    'Settings hub with tabs.',
+);
+$add(
+    $map,
+    'resources/js/Pages/Settings/GeneralPanel.jsx',
+    'presets/admin/resources/js/Pages/Settings/GeneralPanel.jsx',
+    'resources/js/Pages/Settings/GeneralPanel.jsx',
+    'admin',
+    'low',
+    'Settings general tab panel.',
+);
+$add(
+    $map,
+    'resources/js/Pages/Settings/UsersPanel.jsx',
+    'presets/admin/resources/js/Pages/Settings/UsersPanel.jsx',
+    'resources/js/Pages/Settings/UsersPanel.jsx',
+    'admin',
+    'low',
+    'Settings users tab panel.',
+);
+$add(
+    $map,
+    'resources/js/Pages/Settings/AiPanel.jsx',
+    'presets/admin/resources/js/Pages/Settings/AiPanel.jsx',
+    'resources/js/Pages/Settings/AiPanel.jsx',
+    'admin',
+    'low',
+    'Settings AI tab panel (router.post key flow).',
+);
+$add(
+    $map,
+    'resources/js/Pages/Settings/AppPanel.jsx',
+    'presets/admin/resources/js/Pages/Settings/AppPanel.jsx',
+    'resources/js/Pages/Settings/AppPanel.jsx',
+    'admin',
+    'low',
+    'Settings app tab panel.',
+);
+$add(
+    $map,
+    'resources/js/Pages/Settings/TelegramPanel.jsx',
+    'presets/admin/resources/js/Pages/Settings/TelegramPanel.jsx',
+    'resources/js/Pages/Settings/TelegramPanel.jsx',
+    'admin',
+    'low',
+    'Settings Telegram tab panel.',
 );
 $add(
     $map,
@@ -344,12 +389,48 @@ $add(
 );
 $add(
     $map,
-    'resources/js/Pages/AiSettings/Index.jsx',
-    'presets/admin/resources/js/Pages/AiSettings/Index.jsx',
-    'resources/js/Pages/AiSettings/Index.jsx',
+    'app/Http/Controllers/Settings/TelegramSettingsController.php',
+    'presets/admin/app/Http/Controllers/Settings/TelegramSettingsController.php',
+    'app/Http/Controllers/Settings/TelegramSettingsController.php',
     'admin',
-    'low',
-    'AI settings page.',
+    'medium',
+    'Telegram settings controller.',
+);
+$add(
+    $map,
+    'app/Http/Controllers/TelegramWebhookController.php',
+    'presets/admin/app/Http/Controllers/TelegramWebhookController.php',
+    'app/Http/Controllers/TelegramWebhookController.php',
+    'admin',
+    'medium',
+    'Telegram webhook controller.',
+);
+$add(
+    $map,
+    'app/Models/TelegramBotSetting.php',
+    'presets/admin/app/Models/TelegramBotSetting.php',
+    'app/Models/TelegramBotSetting.php',
+    'admin',
+    'medium',
+    'Telegram bot settings model.',
+);
+$add(
+    $map,
+    'app/Services/Telegram/TelegramBotManager.php',
+    'presets/admin/app/Services/Telegram/TelegramBotManager.php',
+    'app/Services/Telegram/TelegramBotManager.php',
+    'admin',
+    'medium',
+    'Telegram bot manager service.',
+);
+$add(
+    $map,
+    'database/migrations/2026_07_21_150000_create_telegram_bot_settings_table.php',
+    'presets/admin/database/migrations/2026_07_21_150000_create_telegram_bot_settings_table.php',
+    'database/migrations/2026_07_21_150000_create_telegram_bot_settings_table.php',
+    'admin',
+    'medium',
+    'Telegram bot settings table migration.',
 );
 $add(
     $map,

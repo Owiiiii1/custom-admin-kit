@@ -1,4 +1,4 @@
-# Dependency decisions — v0.1 core-only
+# Dependency decisions — v0.1 core-only (+ v0.5.0 updates)
 
 ## Package `composer.json` require
 
@@ -6,6 +6,7 @@
 |---------|--------|
 | `php` ^8.3 | **CONFIRMED** |
 | `illuminate/console`, `filesystem`, `support` ^13 | **CONFIRMED** |
+| `nutgram/nutgram` ^4.48 | **REQUIRED** (v0.5.0) — pulled into host via package require |
 
 No Spatie, no Filament, no Inertia in package require.
 

@@ -18,7 +18,7 @@ Legend: **required** = admin/auth cannot work without it · **optional** = featu
 | `APP_ENV` | host | `local` | Environment mode | Laravel bootstrap |
 | `APP_KEY` | required | *(empty)* | Encryption key for sessions/cookies | Laravel bootstrap, session encryption |
 | `APP_DEBUG` | host | `true` | Debug mode | Laravel bootstrap |
-| `APP_URL` | required | `http://localhost` | Base URL for assets, public disk URLs, Ziggy | `config/filesystems.php` (`public` disk URL), `@routes` / asset helpers |
+| `APP_URL` | required | `http://localhost` | Base URL for assets, public disk URLs, Ziggy; also used when registering Telegram webhook URL | `config/filesystems.php` (`public` disk URL), `@routes` / asset helpers, Telegram Settings → set webhook |
 | `APP_LOCALE` | required | `en` | Default locale for admin UI | `config/app.php` → `SetLocale` middleware |
 | `APP_FALLBACK_LOCALE` | optional | `en` | Fallback when translation missing | `config/app.php` |
 | `APP_FAKER_LOCALE` | optional | `en_US` | Faker locale (dev/seeding only) | `config/app.php` |
@@ -105,11 +105,17 @@ With `MAIL_MAILER=log`, flows work in dev but no real email is sent.
 
 Admin pages load via `@vite(['resources/js/app.jsx', ...])` in `app.blade.php` — production requires `npm run build` and `public/build` manifest (no extra env key beyond `APP_URL` for asset URLs).
 
-## AI Settings (v0.3.0 admin preset)
+## AI Settings (v0.3.0+ admin preset)
 
 - No provider-specific env keys are required by default.
 - API keys for OpenAI / Anthropic / Gemini are stored in DB (`ai_provider_settings.api_key`) with encrypted cast.
 - Provider checks use Laravel HTTP client; no SDK env configuration is required.
+
+## Telegram (v0.5.0 admin preset)
+
+- No bot token / webhook secret env keys are required by default.
+- Token and webhook secret are stored encrypted in DB (`telegram_bot_settings`) via Settings → Telegram UI.
+- `APP_URL` must be the public HTTPS base URL so webhook registration points at the correct host.
 
 ---
 

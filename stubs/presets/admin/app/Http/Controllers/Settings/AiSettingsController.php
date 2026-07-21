@@ -9,8 +9,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
-use Inertia\Inertia;
-use Inertia\Response;
 use Throwable;
 
 class AiSettingsController extends Controller
@@ -19,11 +17,19 @@ class AiSettingsController extends Controller
         private readonly AiProviderManager $providerManager
     ) {}
 
-    public function index(): Response
+    public function index(): RedirectResponse
+    {
+        return redirect()->route('settings.index', ['tab' => 'ai']);
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function providersPayload(): array
     {
         $this->ensureProvidersExist();
 
-        $providers = AiProviderSetting::query()
+        return AiProviderSetting::query()
             ->orderByRaw("CASE provider WHEN 'openai' THEN 1 WHEN 'anthropic' THEN 2 WHEN 'gemini' THEN 3 ELSE 99 END")
             ->get()
             ->map(function (AiProviderSetting $setting): array {
@@ -46,10 +52,6 @@ class AiSettingsController extends Controller
                 ];
             })
             ->all();
-
-        return Inertia::render('AiSettings/Index', [
-            'providers' => $providers,
-        ]);
     }
 
     public function saveKey(Request $request, string $provider): RedirectResponse

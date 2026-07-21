@@ -1,5 +1,16 @@
 # Progress Log
 
+## 2026-07-21 — v0.5.0 Settings hub + Telegram
+
+- Settings hub tabs: General / Users / AI / App / Telegram (`Settings/*Panel.jsx`)
+- Fixed AI API key save: `AiPanel` uses `router.post` instead of broken `useForm` `options.data`
+- AdminLayout UX sync: language switcher, avatar menu, AI + Telegram badges, Settings secondary nav; AI/App removed from side menu
+- `/ai-settings` and `/app-settings` redirect to Settings tabs
+- Telegram/Nutgram: `TelegramBotSetting` model + migration, settings actions, webhook controller, header badge
+- Package require: `nutgram/nutgram` ^4.48
+- Smoke/doctor extended for Settings panels, Telegram, Nutgram, webhook, AiPanel post pattern
+- Starter CRM pages intentionally kept as v0.4.0 inline CRUD (landing CRM richer)
+
 ## 2026-07-05 — v0.4.0 starter CRM modules
 
 - Added admin preset starter CRM backend stubs:

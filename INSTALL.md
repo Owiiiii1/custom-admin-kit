@@ -9,10 +9,11 @@
 | **v0.3.0** | **Admin preset available** — `preset=admin` installs core + login/logout/profile/settings-users + AI Settings pages and generic controllers/services. |
 | **v0.3.1** | **Recommended patch release** — keeps `v0.3.0` functionality, fixes package test compatibility, preserves `core` published-files `23/23`. |
 | **v0.4.0** | **Starter CRM release** — extends `preset=admin` with Customers, Orders, Services, Staff, Calendar (generic CRUD + simple calendar). |
+| **v0.5.0** | **Settings hub + Telegram** — Settings tabs (General/Users/AI/App/Telegram), AI key save fix, AdminLayout UX sync, Nutgram (`nutgram/nutgram` ^4.48). |
 
 For admin + AI only: `v0.3.1` remains stable.
 
-For new starter CRM projects (after CI passes): use **`v0.4.0`**.
+For new projects: use **`v0.5.0`**.
 
 ---
 
@@ -20,7 +21,7 @@ For new starter CRM projects (after CI passes): use **`v0.4.0`**.
 
 ```bash
 composer config repositories.custom-admin-kit vcs git@github.com:Owiiiii1/custom-admin-kit.git
-composer require owlsolutions/custom-admin-kit:v0.4.0
+composer require owlsolutions/custom-admin-kit:v0.5.0
 ```
 
 Or from Packagist / path repository:
@@ -208,9 +209,18 @@ php artisan owl-admin:smoke --preset=core
 - Supported providers: `OpenAI`, `Anthropic`, `Gemini`
 - API keys are stored encrypted in `ai_provider_settings` (`api_key` encrypted cast)
 - Exactly one provider/model can be active at a time
+- UI lives under Settings → AI (`/settings?tab=ai`); `/ai-settings` redirects there
 - Header badge in `AdminLayout` reflects AI state:
   - `AI: not connected`
   - `AI: connected — {provider} / {model}`
+
+## 8.2 Telegram (preset=admin, optional)
+
+- `nutgram/nutgram` ^4.48 is pulled in via the package `require` (no separate host require needed)
+- Bot token is **optional** after install — configure in Settings → Telegram (encrypted in DB)
+- No Telegram token env key is required by default
+- Ensure `APP_URL` matches the public HTTPS URL before setting the webhook
+- Header badge reflects connection / webhook state via shared Inertia props
 
 ## 9. Repair
 
@@ -391,10 +401,10 @@ Routes use `AdminRouteMiddleware::stack()` and register:
 | Route | Page | Name |
 |-------|------|------|
 | `GET /dashboard` | `Dashboard` | `dashboard` |
-| `GET /settings` | `Settings/Index` | `settings.index` |
-| `GET /app-settings` | `AppSettings/Index` | `app-settings.index` |
+| `GET /settings` | `Settings/Index` (tabs: general/users/ai/app/telegram) | `settings.index` |
+| `GET /app-settings` | redirect → `/settings?tab=app` | `app-settings.index` |
 | `GET /statistics/logs` | `Statistics/Logs` | `statistics.logs` |
-| `GET /ai-settings` | `AiSettings/Index` | `ai-settings.index` |
+| `GET /ai-settings` | redirect → `/settings?tab=ai` | `ai-settings.index` |
 
 Requires `inertiajs/inertia-laravel` on the host app.
 

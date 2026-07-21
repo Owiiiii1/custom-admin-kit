@@ -177,6 +177,14 @@ class DoctorCommand extends BaseKitCommand
             ? \OwlSolutions\CustomAdminKit\Support\CheckResult::pass('http-client', 'Laravel HTTP client facade is available.')
             : \OwlSolutions\CustomAdminKit\Support\CheckResult::fail('http-client', 'Laravel HTTP client facade is missing.');
 
+        $results[] = class_exists(\SergiX44\Nutgram\Nutgram::class)
+            ? \OwlSolutions\CustomAdminKit\Support\CheckResult::pass('nutgram', 'nutgram/nutgram is installed.')
+            : \OwlSolutions\CustomAdminKit\Support\CheckResult::warn(
+                'nutgram',
+                'nutgram/nutgram is not installed in the host app yet.',
+                'Require owlsolutions/custom-admin-kit (pulls nutgram) or composer require nutgram/nutgram.',
+            );
+
         $aiModelPath = $basePath.'/app/Models/AiProviderSetting.php';
         $results[] = File::exists($aiModelPath)
             ? \OwlSolutions\CustomAdminKit\Support\CheckResult::pass('ai-model', 'app/Models/AiProviderSetting.php exists.')
@@ -193,6 +201,42 @@ class DoctorCommand extends BaseKitCommand
                 'ai-migration',
                 'ai_provider_settings migration not found yet.',
                 'Will be published by owl-admin:install --preset=admin.',
+            );
+
+        $telegramModelPath = $basePath.'/app/Models/TelegramBotSetting.php';
+        $results[] = File::exists($telegramModelPath)
+            ? \OwlSolutions\CustomAdminKit\Support\CheckResult::pass('telegram-model', 'app/Models/TelegramBotSetting.php exists.')
+            : \OwlSolutions\CustomAdminKit\Support\CheckResult::warn(
+                'telegram-model',
+                'app/Models/TelegramBotSetting.php not found yet.',
+                'Will be published by owl-admin:install --preset=admin.',
+            );
+
+        $telegramMigration = glob($basePath.'/database/migrations/*create_telegram_bot_settings_table*.php') ?: [];
+        $results[] = $telegramMigration !== []
+            ? \OwlSolutions\CustomAdminKit\Support\CheckResult::pass('telegram-migration', 'telegram_bot_settings migration exists.')
+            : \OwlSolutions\CustomAdminKit\Support\CheckResult::warn(
+                'telegram-migration',
+                'telegram_bot_settings migration not found yet.',
+                'Will be published by owl-admin:install --preset=admin.',
+            );
+
+        $telegramTokenConfigured = false;
+        try {
+            if (File::exists($telegramModelPath) && Schema::hasTable('telegram_bot_settings')) {
+                $telegramTokenConfigured = \App\Models\TelegramBotSetting::query()
+                    ->whereNotNull('bot_token')
+                    ->exists();
+            }
+        } catch (\Throwable) {
+            $telegramTokenConfigured = false;
+        }
+        $results[] = $telegramTokenConfigured
+            ? \OwlSolutions\CustomAdminKit\Support\CheckResult::pass('telegram-token', 'Telegram bot token is configured.')
+            : \OwlSolutions\CustomAdminKit\Support\CheckResult::warn(
+                'telegram-token',
+                'Telegram bot token is not configured (optional on clean install).',
+                'Configure token in Settings → Telegram after install.',
             );
 
         foreach ([
@@ -245,6 +289,14 @@ class DoctorCommand extends BaseKitCommand
                 : \OwlSolutions\CustomAdminKit\Support\CheckResult::warn(
                     'ai-route',
                     'ai-settings.index route is not registered yet.',
+                    'Run owl-admin:frontend-setup --preset=admin.',
+                );
+
+            $results[] = Route::has('telegram.webhook')
+                ? \OwlSolutions\CustomAdminKit\Support\CheckResult::pass('telegram-webhook-route', 'telegram.webhook route is registered.')
+                : \OwlSolutions\CustomAdminKit\Support\CheckResult::warn(
+                    'telegram-webhook-route',
+                    'telegram.webhook route is not registered yet.',
                     'Run owl-admin:frontend-setup --preset=admin.',
                 );
 

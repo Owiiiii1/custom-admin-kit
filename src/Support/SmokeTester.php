@@ -140,10 +140,38 @@ class SmokeTester
                 self::SECTION_CORE,
             );
             $results[] = $this->checkFrontendFile(
-                'ai-settings-page',
-                $basePath.'/resources/js/Pages/AiSettings/Index.jsx',
-                'resources/js/Pages/AiSettings/Index.jsx exists.',
-                'resources/js/Pages/AiSettings/Index.jsx is missing.',
+                'settings-ai-panel',
+                $basePath.'/resources/js/Pages/Settings/AiPanel.jsx',
+                'resources/js/Pages/Settings/AiPanel.jsx exists.',
+                'resources/js/Pages/Settings/AiPanel.jsx is missing.',
+                self::SECTION_CORE,
+            );
+            $results[] = $this->checkFrontendFile(
+                'settings-users-panel',
+                $basePath.'/resources/js/Pages/Settings/UsersPanel.jsx',
+                'resources/js/Pages/Settings/UsersPanel.jsx exists.',
+                'resources/js/Pages/Settings/UsersPanel.jsx is missing.',
+                self::SECTION_CORE,
+            );
+            $results[] = $this->checkFrontendFile(
+                'settings-telegram-panel',
+                $basePath.'/resources/js/Pages/Settings/TelegramPanel.jsx',
+                'resources/js/Pages/Settings/TelegramPanel.jsx exists.',
+                'resources/js/Pages/Settings/TelegramPanel.jsx is missing.',
+                self::SECTION_CORE,
+            );
+            $results[] = $this->checkFrontendFile(
+                'settings-general-panel',
+                $basePath.'/resources/js/Pages/Settings/GeneralPanel.jsx',
+                'resources/js/Pages/Settings/GeneralPanel.jsx exists.',
+                'resources/js/Pages/Settings/GeneralPanel.jsx is missing.',
+                self::SECTION_CORE,
+            );
+            $results[] = $this->checkFrontendFile(
+                'settings-app-panel',
+                $basePath.'/resources/js/Pages/Settings/AppPanel.jsx',
+                'resources/js/Pages/Settings/AppPanel.jsx exists.',
+                'resources/js/Pages/Settings/AppPanel.jsx is missing.',
                 self::SECTION_CORE,
             );
             $results[] = $this->checkFrontendFile(
@@ -151,6 +179,13 @@ class SmokeTester
                 $basePath.'/app/Models/AiProviderSetting.php',
                 'app/Models/AiProviderSetting.php exists.',
                 'app/Models/AiProviderSetting.php is missing.',
+                self::SECTION_CORE,
+            );
+            $results[] = $this->checkFrontendFile(
+                'telegram-bot-model',
+                $basePath.'/app/Models/TelegramBotSetting.php',
+                'app/Models/TelegramBotSetting.php exists.',
+                'app/Models/TelegramBotSetting.php is missing.',
                 self::SECTION_CORE,
             );
             $results[] = $this->checkFrontendFile(
@@ -185,6 +220,10 @@ class SmokeTester
             $results[] = $aiMigration !== []
                 ? CheckResult::pass('ai-settings-migration', 'ai_provider_settings migration exists.', section: self::SECTION_CORE)
                 : CheckResult::fail('ai-settings-migration', 'ai_provider_settings migration is missing.', section: self::SECTION_CORE);
+            $telegramMigration = glob($basePath.'/database/migrations/*create_telegram_bot_settings_table*.php') ?: [];
+            $results[] = $telegramMigration !== []
+                ? CheckResult::pass('telegram-bot-migration', 'telegram_bot_settings migration exists.', section: self::SECTION_CORE)
+                : CheckResult::fail('telegram-bot-migration', 'telegram_bot_settings migration is missing.', section: self::SECTION_CORE);
             $results[] = (glob($basePath.'/database/migrations/*create_customers_table*.php') ?: []) !== []
                 ? CheckResult::pass('crm-customers-migration', 'customers migration exists.', section: self::SECTION_CORE)
                 : CheckResult::fail('crm-customers-migration', 'customers migration is missing.', section: self::SECTION_CORE);
@@ -224,6 +263,16 @@ class SmokeTester
             $results[] = $hasAiTable
                 ? CheckResult::pass('ai-provider-settings-table', 'ai_provider_settings table exists.', section: self::SECTION_CORE)
                 : CheckResult::fail('ai-provider-settings-table', 'ai_provider_settings table missing.', 'Run php artisan migrate.', self::SECTION_CORE);
+
+            $hasTelegramTable = false;
+            try {
+                $hasTelegramTable = Schema::hasTable('telegram_bot_settings');
+            } catch (\Throwable) {
+                $hasTelegramTable = false;
+            }
+            $results[] = $hasTelegramTable
+                ? CheckResult::pass('telegram-bot-settings-table', 'telegram_bot_settings table exists.', section: self::SECTION_CORE)
+                : CheckResult::fail('telegram-bot-settings-table', 'telegram_bot_settings table missing.', 'Run php artisan migrate.', self::SECTION_CORE);
             $results[] = $this->checkTableExists('crm-customers-table', 'customers');
             $results[] = $this->checkTableExists('crm-services-table', 'services');
             $results[] = $this->checkTableExists('crm-staff-table', 'staff');
@@ -231,7 +280,7 @@ class SmokeTester
             $results[] = $this->checkTableExists('crm-order-staff-table', 'order_staff');
 
             $results[] = $this->checkFrontendFile(
-                'admin-layout-ai-badge',
+                'admin-layout-file',
                 $basePath.'/resources/js/Layouts/AdminLayout.jsx',
                 'resources/js/Layouts/AdminLayout.jsx exists.',
                 'resources/js/Layouts/AdminLayout.jsx is missing.',
@@ -275,14 +324,33 @@ class SmokeTester
             $layoutContents = File::exists($basePath.'/resources/js/Layouts/AdminLayout.jsx')
                 ? (string) File::get($basePath.'/resources/js/Layouts/AdminLayout.jsx')
                 : '';
-            $results[] = str_contains($layoutContents, 'ai-settings.index')
-                ? CheckResult::pass('admin-layout-ai-menu', 'AdminLayout contains AI Settings menu route.', section: self::SECTION_CORE)
-                : CheckResult::warn('admin-layout-ai-menu', 'AdminLayout AI Settings menu route not detected.', section: self::SECTION_CORE);
+            $results[] = (str_contains($layoutContents, 'owlAdmin?.ai') || str_contains($layoutContents, 'owlAdmin.ai') || str_contains($layoutContents, 'aiConnected'))
+                ? CheckResult::pass('admin-layout-ai-badge', 'AdminLayout contains AI status badge wiring.', section: self::SECTION_CORE)
+                : CheckResult::warn('admin-layout-ai-badge', 'AdminLayout AI badge wiring not detected.', section: self::SECTION_CORE);
+            $results[] = (str_contains($layoutContents, 'owlAdmin?.telegram') || str_contains($layoutContents, 'telegramBadge') || str_contains($layoutContents, 'Bot:'))
+                ? CheckResult::pass('admin-layout-bot-badge', 'AdminLayout contains Telegram bot badge wiring.', section: self::SECTION_CORE)
+                : CheckResult::warn('admin-layout-bot-badge', 'AdminLayout Telegram bot badge wiring not detected.', section: self::SECTION_CORE);
+            $results[] = str_contains($layoutContents, 'settings.index')
+                ? CheckResult::pass('admin-layout-settings-menu', 'AdminLayout contains Settings menu route.', section: self::SECTION_CORE)
+                : CheckResult::warn('admin-layout-settings-menu', 'AdminLayout Settings menu route not detected.', section: self::SECTION_CORE);
+            $results[] = ! str_contains($layoutContents, "route: 'ai-settings.index'")
+                ? CheckResult::pass('admin-layout-no-ai-side-menu', 'AdminLayout does not require AI Settings side menu item.', section: self::SECTION_CORE)
+                : CheckResult::warn('admin-layout-no-ai-side-menu', 'AdminLayout still lists ai-settings.index in primary nav.', section: self::SECTION_CORE);
             $results[] = $this->checkLayoutMenuContains($layoutContents, 'customers.index', 'admin-layout-customers-menu');
             $results[] = $this->checkLayoutMenuContains($layoutContents, 'orders.index', 'admin-layout-orders-menu');
             $results[] = $this->checkLayoutMenuContains($layoutContents, 'services.index', 'admin-layout-services-menu');
             $results[] = $this->checkLayoutMenuContains($layoutContents, 'staff.index', 'admin-layout-staff-menu');
             $results[] = $this->checkLayoutMenuContains($layoutContents, 'calendar.index', 'admin-layout-calendar-menu');
+
+            $aiPanelPath = $basePath.'/resources/js/Pages/Settings/AiPanel.jsx';
+            $aiPanelContents = File::exists($aiPanelPath) ? (string) File::get($aiPanelPath) : '';
+            $results[] = (str_contains($aiPanelContents, 'router.post') && ! preg_match('/form\.post\s*\([^)]*\{[\s\S]*data\s*:/', $aiPanelContents))
+                ? CheckResult::pass('ai-panel-router-post', 'AiPanel uses router.post payload pattern.', section: self::SECTION_CORE)
+                : CheckResult::fail(
+                    'ai-panel-router-post',
+                    'AiPanel must use router.post(url, payload) and must not pass options.data to useForm().post().',
+                    section: self::SECTION_CORE,
+                );
 
             $results[] = $this->checkDashboardAuthMiddleware();
         }
@@ -451,6 +519,11 @@ class SmokeTester
                 'ai-settings.check',
                 'ai-settings.activate',
                 'ai-settings.deactivate',
+                'settings.telegram.save-token',
+                'settings.telegram.check',
+                'settings.telegram.set-webhook',
+                'settings.telegram.remove-webhook',
+                'telegram.webhook',
             ]);
         }
 
